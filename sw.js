@@ -1,4 +1,4 @@
-const CACHE = 'visa-v3';
+const CACHE = 'visa-v5';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

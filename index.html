@@ -245,8 +245,8 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
   <button class="hdr-btn" onclick="openImp()" data-he="⬆ טעינת עובדים" data-en="⬆ Import">⬆ טעינת עובדים</button>
   <button class="hdr-btn" onclick="openQR()" title="פתח בטלפון">📱</button>
   <button class="hdr-btn" id="lang-btn" onclick="toggleLang()">EN</button>
-  <button class="hdr-btn" onclick="openDrive()">
-    <span class="sync-dot" id="sync-dot"></span> Drive
+  <button class="hdr-btn" onclick="openSync()">
+    <span class="sync-dot" id="sync-dot"></span> <span data-he="סנכרון" data-en="Sync">סנכרון</span>
   </button>
 </div>
 
@@ -446,50 +446,118 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
   </div>
 </div>
 
-<!-- ══════════ DRIVE MODAL ══════════ -->
-<div class="ovr" id="ovr-drive">
+<!-- ══════════ SYNC MODAL ══════════ -->
+<div class="ovr" id="ovr-sync">
   <div class="ovr-box">
     <div class="ovr-hdr">
-      <h3 data-he="🔄 הגדרות סנכרון Drive" data-en="🔄 Drive Sync Settings">🔄 הגדרות סנכרון Drive</h3>
-      <button class="ovr-close" onclick="closeDrive()">✕</button>
+      <h3 data-he="☁ סנכרון נתונים" data-en="☁ Data Sync">☁ סנכרון נתונים</h3>
+      <button class="ovr-close" onclick="closeSync()">✕</button>
     </div>
     <div class="ovr-body">
       <!-- Status row -->
-      <div class="drive-status" id="drive-status-row">
-        <span class="sync-dot" id="drive-dot"></span>
+      <div class="drive-status" id="sync-status-row">
+        <span class="sync-dot" id="sync-modal-dot"></span>
         <div style="flex:1">
-          <div id="ds-status-txt" style="font-weight:700;font-size:14px" data-he="לא מחובר" data-en="Not Connected">לא מחובר</div>
-          <div id="ds-status-sub" style="font-size:12px;color:var(--t3);margin-top:2px"></div>
+          <div id="sync-status-txt" style="font-weight:700;font-size:14px">לא מחובר</div>
+          <div id="sync-status-sub" style="font-size:12px;color:var(--t3);margin-top:2px">הכנס Script URL להפעלת הסנכרון</div>
         </div>
       </div>
-      <!-- User info (shown when connected) -->
-      <div id="ds-user-info" style="display:none;font-size:13px;color:var(--t2);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border-radius:8px"></div>
-      <!-- Client ID -->
-      <div class="frow">
-        <label>Google OAuth Client ID</label>
-        <input class="inp" id="drive-cid" placeholder="...apps.googleusercontent.com">
+
+      <!-- ══ GAS (PRIMARY) ══ -->
+      <div style="background:var(--bg3);border-radius:11px;padding:14px;margin-top:14px;margin-bottom:14px;border:1.5px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">🔄 סנכרון קבוצתי — Google Apps Script</div>
+        <div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">
+          הכנס Script URL אחד — <b>כולם מסונכרנים אוטומטית</b>, ללא צורך בהגדרות נוספות.
+        </div>
+        <label class="lbl" style="font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">Script URL</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <input class="inp" id="ds-gas-url" type="url" dir="ltr"
+            placeholder="https://script.google.com/macros/s/.../exec"
+            autocomplete="off" spellcheck="false" style="flex:1;font-size:13px">
+          <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0" onclick="saveGasUrl()">שמור</button>
+        </div>
+        <div id="ds-gas-status" style="font-size:12px;min-height:16px;margin-bottom:8px"></div>
+        <label class="lbl" style="font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px;margin-top:4px" data-he="השם שלך (יוצג על כל שינוי)" data-en="Your name (shown on each change)">השם שלך (יוצג על כל שינוי)</label>
+        <div style="display:flex;gap:6px">
+          <input class="inp" id="ds-username" type="text" placeholder="למשל: דוד לוי" style="flex:1;font-size:14px">
+          <button class="btn btn-ghost btn-sm" style="flex-shrink:0;margin:0" onclick="saveUserName()">שמור</button>
+        </div>
+        <div id="ds-username-status" style="font-size:12px;color:var(--t3);margin-top:5px"></div>
       </div>
-      <!-- Shared File ID -->
-      <div class="frow">
-        <label data-he="Shared File ID — לסנכרון בין משתמשים (אופציונלי)" data-en="Shared File ID — for multi-user sync (optional)">Shared File ID — לסנכרון בין משתמשים (אופציונלי)</label>
-        <input class="inp" id="drive-shared-fid" placeholder="1BxiMV..." data-phe="השאר ריק לקובץ אישי" data-pen="Leave empty for personal file">
-      </div>
-      <!-- Buttons -->
-      <div class="btn-row" style="margin-top:4px">
-        <button class="btn btn-ghost" id="ds-btn-disconnect" onclick="driveClear()" style="display:none" data-he="נתק" data-en="Disconnect">נתק</button>
-        <button class="btn btn-ghost" id="ds-btn-sync" onclick="driveSave()" style="display:none" data-he="🔄 סנכרן עכשיו" data-en="🔄 Sync Now">🔄 סנכרן עכשיו</button>
-        <button class="btn btn-primary" id="ds-btn-connect" onclick="driveSaveAndConnect()" data-he="🔗 התחבר ל-Drive" data-en="🔗 Connect to Drive">🔗 התחבר ל-Drive</button>
-      </div>
-      <details class="setup-guide">
-        <summary data-he="איך מגדירים Client ID?" data-en="How to set up Client ID?">איך מגדירים Client ID?</summary>
+
+      <!-- GAS Setup Guide -->
+      <details class="setup-guide" style="margin-bottom:14px">
+        <summary data-he="כיצד יוצרים Script URL? (פעם אחת, 5 דקות)" data-en="How to create Script URL? (once, 5 min)">כיצד יוצרים Script URL? (פעם אחת, 5 דקות)</summary>
         <ol>
-          <li data-he='פתח <strong>console.cloud.google.com</strong>' data-en='Open <strong>console.cloud.google.com</strong>'>פתח <strong>console.cloud.google.com</strong></li>
-          <li data-he="צור פרויקט חדש" data-en="Create a new project">צור פרויקט חדש</li>
-          <li data-he='הפעל את <strong>Google Drive API</strong>' data-en='Enable <strong>Google Drive API</strong>'>הפעל את <strong>Google Drive API</strong></li>
-          <li data-he="צור Credentials → OAuth 2.0 Client ID → Web Application" data-en="Create Credentials → OAuth 2.0 Client ID → Web Application">צור Credentials → OAuth 2.0 Client ID → Web Application</li>
-          <li data-he="הוסף את כתובת הדפדפן כ-Authorized JavaScript Origin" data-en="Add your page URL as Authorized JavaScript Origin">הוסף את כתובת הדפדפן כ-Authorized JavaScript Origin</li>
-          <li data-he="העתק את Client ID לשדה למעלה" data-en="Copy Client ID to the field above">העתק את Client ID לשדה למעלה</li>
+          <li>כנס ל-<strong><a href="https://script.google.com" target="_blank">script.google.com</a></strong> ← לחץ <strong>+ New project</strong></li>
+          <li>מחק את הקוד הקיים והדבק את <strong>קוד ה-GAS</strong> (מופיע למטה)</li>
+          <li>לחץ <strong>Deploy → New deployment</strong><br>
+            Type: <strong>Web app</strong> | Execute as: <strong>Me</strong> | Who has access: <strong>Anyone</strong><br>
+            לחץ Deploy ← אשר הרשאות ← העתק את ה-URL</li>
+          <li>הדבק את ה-URL בשדה "Script URL" למעלה ולחץ שמור</li>
+          <li>שלח את <strong>אותו URL</strong> לכל המשתמשים — כולם יכניסו אותו ויסונכרנו אוטומטית</li>
         </ol>
+        <details style="margin-top:10px">
+          <summary style="font-size:12px;font-weight:600;color:var(--blue);cursor:pointer">📋 קוד GAS להעתקה</summary>
+          <pre id="gas-code-pre" style="font-size:10px;background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:10px;margin-top:8px;overflow-x:auto;direction:ltr;text-align:left;line-height:1.5;white-space:pre-wrap">function doGet(e){try{return ok(getFile().getBlob().getDataAsString()||'{}');}catch(err){return ok(JSON.stringify({error:err.message}));}}
+function doPost(e){try{var inc=JSON.parse(e.postData.contents);var file=getFile();var cur={};try{cur=JSON.parse(file.getBlob().getDataAsString());}catch(_){}var merged=merge(cur,inc);file.setContent(JSON.stringify(merged));return ok(JSON.stringify(merged));}catch(err){return ok(JSON.stringify({error:err.message}));}}
+function getFile(){var it=DriveApp.getFilesByName('visa_data.json');if(it.hasNext())return it.next();return DriveApp.createFile('visa_data.json',JSON.stringify({lastUpdated:0,visa_req:'[]',visa_emp:'[]'}));}
+function merge(c,n){var ct=c.lastUpdated||0,nt=n.lastUpdated||0;var cr=[];var nr=[];try{cr=JSON.parse(c.visa_req||'[]');}catch(_){}try{nr=JSON.parse(n.visa_req||'[]');}catch(_){}var map={};cr.forEach(function(r){map[r.id]=r;});nr.forEach(function(r){if(!map[r.id]){map[r.id]=r;return;}var et=map[r.id].updatedAt||map[r.id].createdAt||'';var rt=r.updatedAt||r.createdAt||'';if(rt>et)map[r.id]=r;});var reqs=Object.values(map).sort(function(a,b){return(b.createdAt||'')>(a.createdAt||'')?1:-1;});var ti=nt>=ct;return{lastUpdated:Math.max(ct,nt,Date.now()),visa_req:JSON.stringify(reqs),visa_emp:ti?(n.visa_emp||c.visa_emp):(c.visa_emp||n.visa_emp)};}
+function ok(t){return ContentService.createTextOutput(t).setMimeType(ContentService.MimeType.JSON);}</pre>
+          <button onclick="navigator.clipboard.writeText(document.getElementById('gas-code-pre').textContent).then(()=>toast('✓ קוד הועתק'))" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;margin-top:6px;width:100%">📋 העתק קוד</button>
+        </details>
+      </details>
+
+      <!-- ══ DRIVE (SECONDARY) ══ -->
+      <details class="setup-guide">
+        <summary data-he="סנכרון ישיר ל-Drive (חשבון יחיד) — Client ID" data-en="Direct Drive Sync (single account) — Client ID">סנכרון ישיר ל-Drive (חשבון יחיד) — Client ID</summary>
+        <div style="padding-top:10px">
+          <label class="lbl" style="font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">Client ID (מ-Google Cloud Console)</label>
+          <input class="inp" id="ds-cid-inp" type="text" dir="ltr"
+            placeholder="123456789-abc.apps.googleusercontent.com"
+            autocomplete="off" spellcheck="false">
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;margin-bottom:10px">ה-Client ID נשמר במכשיר זה בלבד.</div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+          <label class="lbl" style="font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px">
+            🔗 שיתוף קבוצתי <span style="font-size:11px;font-weight:400;color:var(--t3)">(אופציונלי)</span>
+          </label>
+          <p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">כדי לסנכרן עם משתמשים שיש להם <b>חשבון Gmail שונה</b> — הזן כאן את ה-File ID של קובץ Drive משותף.</p>
+          <div style="display:flex;gap:6px">
+            <input class="inp" id="ds-shared-fid" type="text" dir="ltr"
+              placeholder="1BxKm...xyz  (File ID מ-Google Drive)"
+              spellcheck="false" style="flex:1;font-size:13px">
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0;margin:0" onclick="saveSharedFid()">שמור</button>
+          </div>
+          <div id="ds-shared-status" style="font-size:12px;margin-top:5px;min-height:16px"></div>
+          <div id="ds-current-fid" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--t2)">
+            📄 <b>File ID של הקובץ שלך</b> — העתק ושתף:<br>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+              <span id="ds-fid-val" style="font-family:monospace;font-size:12px;color:var(--blue);word-break:break-all;flex:1;user-select:all"></span>
+              <button onclick="navigator.clipboard.writeText(document.getElementById('ds-fid-val').textContent).then(()=>toast('✓ File ID הועתק'))"
+                style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0">📋 העתק</button>
+            </div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-ghost btn-sm" id="ds-btn-disconnect" onclick="driveDisconnect()" style="display:none">התנתק</button>
+            <button class="btn btn-ghost btn-sm" id="ds-btn-sync" onclick="driveSyncNow()" style="display:none">סנכרן עכשיו</button>
+            <button class="btn btn-ghost btn-sm" id="ds-btn-joinlink" onclick="copyJoinLink()" style="display:none;background:#f0fdf4;color:#15803d;border:1.5px solid #86efac">🔗 העתק לינק הצטרפות</button>
+            <button class="btn btn-primary btn-sm" id="ds-btn-connect" onclick="driveSaveAndConnect()">התחבר ל-Drive</button>
+          </div>
+          <div id="ds-user-info" style="display:none;font-size:12px;color:var(--t3);text-align:center;margin-top:8px"></div>
+
+          <details class="setup-guide" style="margin-top:12px">
+            <summary data-he="איך מקבלים Client ID? (5 דקות, פעם אחת)" data-en="How to get Client ID? (5 min, once)">איך מקבלים Client ID? (5 דקות, פעם אחת)</summary>
+            <ol>
+              <li>כנס ל-<a href="https://console.cloud.google.com" target="_blank"><strong>console.cloud.google.com</strong></a> ← צור פרויקט חדש</li>
+              <li><strong>APIs &amp; Services → Library</strong> ← חפש <strong>Google Drive API</strong> ← Enable</li>
+              <li><strong>Credentials → + Create → OAuth 2.0 Client ID</strong></li>
+              <li>Application type: <strong>Web application</strong><br>Authorized JavaScript origins — הוסף את כתובת ה-GitHub Pages שלך</li>
+              <li>לחץ <strong>Create</strong> ← העתק את ה-Client ID ← הדבק בשדה למעלה</li>
+            </ol>
+          </details>
+        </div>
       </details>
     </div>
   </div>
@@ -506,11 +574,11 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
       <div class="qr-wrap">
         <div id="qr-canvas"></div>
         <div class="qr-url" id="qr-url"></div>
-        <div class="qr-hint" data-he="סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים דרך Google Drive." data-en="Scan the QR code with your phone, or send the link via WhatsApp.<br>Data syncs across devices via Google Drive.">סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים דרך Google Drive.</div>
+        <div class="qr-hint" data-he="סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים בזמן אמת לכל המכשירים." data-en="Scan the QR code with your phone, or send the link via WhatsApp.<br>Data syncs in real-time across all devices.">סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים בזמן אמת לכל המכשירים.</div>
       </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="btn btn-ghost btn-sm" onclick="copyQRUrl()" data-he="📋 העתק קישור" data-en="📋 Copy Link">📋 העתק קישור</button>
-        <button class="btn btn-primary btn-sm" onclick="openDrive();closeQR()" data-he="🔄 הגדר Drive" data-en="🔄 Setup Drive">🔄 הגדר Drive</button>
+        <button class="btn btn-primary btn-sm" onclick="openSync();closeQR()" data-he="🔄 הגדר סנכרון" data-en="🔄 Setup Sync">🔄 הגדר סנכרון</button>
       </div>
     </div>
   </div>
@@ -561,10 +629,12 @@ function toggleLang(){
 }
 
 // ─── STORAGE ───
-const KV='visa_req', KDRV='visa_drive_client_id', KEMP='visa_emp', KSHARED='visa_drive_shared_fid';
+const KV='visa_req', KEMP='visa_emp';
+const KGAS='visa_gas_url', KUSER='visa_user_name';
+const KDRV='visa_drive_client_id', KSHARED='visa_drive_shared_fid';
 const ga=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
 const _raw=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-const sa=(k,v)=>{_raw(k,v);driveSaveDebounced()};
+const sa=(k,v)=>{_raw(k,v);if(gasEnabled())gasPushDebounced();else driveSaveDebounced()};
 const uid=()=>'V-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 // ─── EMPLOYEE DATA ───
@@ -1077,65 +1147,332 @@ function toast(msg){
   _snackT=setTimeout(()=>s.classList.remove('show'),2800);
 }
 
-// ─── DRIVE SYNC ───
-const DRIVE_FILE='visa_data.json', DRIVE_POLL=30000;
-const BOUNDARY='visa_boundary';
-let _driveToken=null, _driveFileId=null, _driveTimer=null, _driveSaveTimer=null;
-let _driveLastTs=0, _driveUserEmail='', _driveUserName='';
-let _driveSharedFileId=localStorage.getItem(KSHARED)||'';
+// ─── SYNC (GAS primary + Drive fallback) ───
 
-function openDrive(){
-  // Populate inputs before opening
-  const cidInp=document.getElementById('drive-cid');
-  if(cidInp) cidInp.value=localStorage.getItem(KDRV)||'';
-  const sfInp=document.getElementById('drive-shared-fid');
-  if(sfInp) sfInp.value=_driveSharedFileId;
-  updateDriveModal();
-  document.getElementById('ovr-drive').classList.add('open');
-}
-function closeDrive(){document.getElementById('ovr-drive').classList.remove('open')}
+// ── GAS ──────────────────────────────────────────────────────────────
+let GAS_URL      = localStorage.getItem(KGAS)||'';
+let _gasUserName = localStorage.getItem(KUSER)||'';
+let _gasPushTimer= null;
+let _gasPollTimer= null;
 
-function driveSetStatus(state,txt){
-  const dot=document.getElementById('sync-dot');
-  const ddot=document.getElementById('drive-dot');
-  [dot,ddot].forEach(d=>{
+const gasEnabled = ()=>!!GAS_URL;
+
+function setSyncStatus(state,detail){
+  const dot  = document.getElementById('sync-dot');
+  const mdot = document.getElementById('sync-modal-dot');
+  [dot,mdot].forEach(d=>{
     if(!d) return;
     d.className='sync-dot';
-    if(state==='ok') d.classList.add('ok');
+    if(state==='ok')      d.classList.add('ok');
     else if(state==='syncing') d.classList.add('syncing');
-    else if(state==='err') d.style.background='#ff7070';
-    else d.style.background='#f0c040';
+    else if(state==='err'){ d.style.cssText='background:#ff7070'; }
+    else                  { d.style.cssText='background:#f0c040'; }
   });
 }
 
-function updateDriveModal(){
-  const dot=document.getElementById('drive-dot');
-  const stxt=document.getElementById('ds-status-txt');
-  const ssub=document.getElementById('ds-status-sub');
-  const uinfo=document.getElementById('ds-user-info');
-  const btnConn=document.getElementById('ds-btn-connect');
-  const btnSync=document.getElementById('ds-btn-sync');
-  const btnDisc=document.getElementById('ds-btn-disconnect');
+function updateSyncModal(){
+  const dot  = document.getElementById('sync-modal-dot');
   if(!dot) return;
-  const connected=!!(_driveToken&&_driveFileId);
-  if(connected){
+  const txt  = document.getElementById('sync-status-txt');
+  const sub  = document.getElementById('sync-status-sub');
+  const gasEl= document.getElementById('ds-gas-url');
+  const unEl = document.getElementById('ds-username');
+  const unSt = document.getElementById('ds-username-status');
+  const gasSt= document.getElementById('ds-gas-status');
+  if(gasEl) gasEl.value=GAS_URL||'';
+  if(unEl)  unEl.value =_gasUserName||_driveUserName||'';
+  if(unSt&&(_gasUserName||_driveUserName)) unSt.textContent=`✓ שמך: ${_gasUserName||_driveUserName}`;
+  if(gasSt&&GAS_URL){ gasSt.textContent='✓ Script URL נשמר — הסנכרון פעיל'; gasSt.style.color='var(--green)'; }
+  if(gasEnabled()){
     dot.className='sync-dot ok';
-    stxt.textContent=T('מחובר ✓','Connected ✓');
-    ssub.textContent=_driveSharedFileId
-      ? T('קובץ משותף — מסונכרן עם כל המשתמשים','Shared file — synced with all users')
-      : T('קובץ אישי — מסונכרן עם כל המכשירים שלך','Personal file — synced across your devices');
-    if(uinfo&&_driveUserName){uinfo.style.display='block';uinfo.textContent=`${_driveUserName} (${_driveUserEmail})`;}
-    if(btnConn) btnConn.style.display='none';
-    if(btnSync) btnSync.style.display='';
-    if(btnDisc) btnDisc.style.display='';
-  }else{
-    dot.className='sync-dot';dot.style.background='#f0c040';
-    stxt.textContent=T('לא מחובר','Not Connected');
-    ssub.textContent=T('לחץ "התחבר" לסנכרון בין מכשירים','Click "Connect" to sync across devices');
-    if(uinfo) uinfo.style.display='none';
-    if(btnConn) btnConn.style.display='';
-    if(btnSync) btnSync.style.display='none';
-    if(btnDisc) btnDisc.style.display='none';
+    if(txt) txt.textContent=T('סנכרון קבוצתי פעיל ✓','Group sync active ✓');
+    if(sub) sub.textContent=T('כל המשתמשים מסונכרנים אוטומטית — כל 30 שניות','All users sync automatically every 30 seconds');
+  } else {
+    const connected=_driveToken&&_driveFileId;
+    if(connected){
+      dot.className='sync-dot ok';
+      if(txt) txt.textContent=T('מחובר ל-Drive ✓','Connected to Drive ✓');
+      if(sub) sub.textContent=_driveSharedFileId
+        ? T('מסונכרן עם כל המשתמשים','Synced with all users')
+        : T('מסונכרן עם כל המכשירים שלך','Synced across your devices');
+    } else {
+      dot.className='sync-dot'; dot.style.background='#f0c040';
+      if(txt) txt.textContent=T('לא מחובר','Not Connected');
+      if(sub) sub.textContent=T('הכנס Script URL להפעלת הסנכרון','Enter Script URL to enable sync');
+    }
+  }
+  // Drive section
+  const cidInp=document.getElementById('ds-cid-inp');
+  if(cidInp) cidInp.value=DRIVE_CLIENT_ID||'';
+  const sfEl=document.getElementById('ds-shared-fid');
+  if(sfEl&&sfEl.value===''&&_driveSharedFileId) sfEl.value=_driveSharedFileId;
+  const btnSync=document.getElementById('ds-btn-sync');
+  const btnDis =document.getElementById('ds-btn-disconnect');
+  const btnCon =document.getElementById('ds-btn-connect');
+  const btnJoin=document.getElementById('ds-btn-joinlink');
+  const uInfo  =document.getElementById('ds-user-info');
+  const connected=_driveToken&&_driveFileId;
+  if(btnSync) btnSync.style.display=connected?'':'none';
+  if(btnDis)  btnDis.style.display =connected?'':'none';
+  if(btnCon)  btnCon.style.display =connected?'none':'';
+  if(btnJoin) btnJoin.style.display=(connected&&!_driveSharedFileId)?'':'none';
+  if(uInfo&&_driveUserName){ uInfo.style.display='block'; uInfo.textContent=`מחובר כ: ${_driveUserName} (${_driveUserEmail})`; }
+  else if(uInfo) uInfo.style.display='none';
+  const fidDiv=document.getElementById('ds-current-fid');
+  const fidVal=document.getElementById('ds-fid-val');
+  if(fidDiv&&fidVal){
+    if(_driveFileId&&!_driveSharedFileId){ fidDiv.style.display='block'; fidVal.textContent=_driveFileId; }
+    else fidDiv.style.display='none';
+  }
+}
+
+function openSync(){
+  updateSyncModal();
+  document.getElementById('ovr-sync').classList.add('open');
+}
+function closeSync(){document.getElementById('ovr-sync').classList.remove('open')}
+
+function buildGasPayload(){
+  const now=Date.now();
+  _driveLastTs=Math.max(_driveLastTs||0,now);
+  return JSON.stringify({
+    lastUpdated:_driveLastTs,
+    visa_req:localStorage.getItem(KV)||'[]',
+    visa_emp:localStorage.getItem(KEMP)||'[]',
+    _user:_gasUserName||_driveUserName||null,
+  });
+}
+
+function applyGasResponse(data){
+  if(!data||typeof data!=='object'||data.error) return false;
+  const remoteTs=data.lastUpdated||0;
+  const safe=(v,f)=>(typeof v==='string'&&v.length>1)?v:f;
+  let remoteReqs=[];
+  try{remoteReqs=JSON.parse(safe(data.visa_req,'[]'));}catch{}
+  const localReqs=ga(KV);
+  const merged=mergeReqArrays(localReqs,remoteReqs);
+  const mergedStr=JSON.stringify(merged);
+  const changed=mergedStr!==JSON.stringify(localReqs);
+  localStorage.setItem(KV,mergedStr);
+  if(remoteTs>=(_driveLastTs||0)){
+    _driveLastTs=remoteTs;
+    const emp=safe(data.visa_emp,localStorage.getItem(KEMP)||'[]');
+    localStorage.setItem(KEMP,emp);
+  }
+  loadSharedData();
+  const tab=document.querySelector('.tab-panel.on')?.id?.replace('tab-','');
+  if(tab==='list') renderList();
+  if(tab==='cal')  renderCal();
+  return changed;
+}
+
+async function gasSync(){
+  if(!GAS_URL) return;
+  setSyncStatus('syncing');
+  try{
+    const base=GAS_URL.endsWith('/exec')?GAS_URL:GAS_URL.replace(/\/+$/,'')+'/exec';
+    const res=await fetch(base+'?t='+Date.now(),{method:'GET'});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const txt=await res.text();
+    let data;
+    try{data=JSON.parse(txt);}catch{
+      if(txt.includes('<html')||txt.includes('<!DOCTYPE'))
+        throw new Error('GAS מחזיר HTML — וודא: Execute as=Me, Who has access=Anyone, ולחץ New Deployment');
+      throw new Error('תשובת שרת לא תקינה');
+    }
+    if(data.error) throw new Error(data.error);
+    const changed=applyGasResponse(data);
+    setSyncStatus('ok');
+    const sub=document.getElementById('sync-status-sub');
+    if(sub) sub.textContent=T('סונכרן — ','Synced — ')+new Date().toLocaleTimeString('he-IL');
+    if(changed) toast(T('🔄 נתונים עודכנו','🔄 Data updated'));
+  }catch(e){
+    setSyncStatus('err',e.message);
+    toast(T('⚠ סנכרון נכשל: ','⚠ Sync failed: ')+e.message);
+    const sub=document.getElementById('sync-status-sub');
+    if(sub){ sub.textContent=T('שגיאה: ','Error: ')+e.message; sub.style.color='var(--red)'; }
+    const el=document.getElementById('ds-gas-status');
+    if(el){ el.textContent='❌ '+e.message; el.style.color='var(--red)'; }
+  }
+}
+
+async function gasPush(){
+  if(!GAS_URL) return;
+  setSyncStatus('syncing');
+  try{
+    const url=GAS_URL.endsWith('/exec')?GAS_URL:GAS_URL.replace(/\/+$/,'')+'/exec';
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:buildGasPayload()});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const txt=await res.text();
+    let data;
+    try{data=JSON.parse(txt);}catch{throw new Error('תשובת שרת לא תקינה');}
+    if(data.error) throw new Error(data.error);
+    applyGasResponse(data);
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('err',e.message);
+    toast(T('⚠ שמירה נכשלה: ','⚠ Save failed: ')+e.message);
+  }
+}
+
+function gasPushDebounced(){
+  if(!GAS_URL) return;
+  clearTimeout(_gasPushTimer);
+  _gasPushTimer=setTimeout(gasPush,1500);
+}
+
+function startGasPoll(){
+  clearInterval(_gasPollTimer);
+  _gasPollTimer=setInterval(gasSync,30000);
+}
+
+function saveGasUrl(){
+  const v=(document.getElementById('ds-gas-url')?.value||'').trim();
+  GAS_URL=v;
+  localStorage.setItem(KGAS,v);
+  const el=document.getElementById('ds-gas-status');
+  if(el){
+    if(v){el.textContent='✓ Script URL נשמר — הסנכרון פעיל';el.style.color='var(--green)';}
+    else {el.textContent='הוסר';el.style.color='var(--t3)';}
+  }
+  if(v){ setSyncStatus('syncing'); gasSync().then(()=>startGasPoll()); }
+  else   setSyncStatus('offline');
+  toast(v?T('✓ סנכרון קבוצתי פעיל!','✓ Group sync active!'):T('סנכרון GAS הוסר','GAS sync removed'));
+}
+
+function saveUserName(){
+  const v=(document.getElementById('ds-username')?.value||'').trim();
+  _gasUserName=v; _driveUserName=v;
+  localStorage.setItem(KUSER,v);
+  const el=document.getElementById('ds-username-status');
+  if(el) el.textContent=v?`✓ שמך: ${v}`:'';
+  toast(v?T(`✓ שמך נשמר: ${v}`,`✓ Name saved: ${v}`):T('שם הוסר','Name removed'));
+}
+
+// ── GOOGLE DRIVE ──────────────────────────────────────────────────────
+const DRIVE_FILE='visa_data.json', DRIVE_POLL_MS=30000;
+const BOUNDARY='visa_boundary', DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
+let DRIVE_CLIENT_ID    = localStorage.getItem(KDRV)||'';
+let _driveToken=null, _driveFileId=null, _drivePollTimer=null, _driveSaveTimer=null;
+let _driveLastTs=0, _driveSharedFileId=localStorage.getItem(KSHARED)||'';
+let _driveUserEmail='', _driveUserName='';
+
+// קריאת ?fid= מה-URL — הצטרפות ע"י לינק
+(function(){
+  try{
+    const fid=new URLSearchParams(location.search).get('fid');
+    if(fid&&fid!==_driveSharedFileId){
+      _driveSharedFileId=fid;
+      localStorage.setItem(KSHARED,fid);
+    }
+  }catch{}
+})();
+
+async function fetchUserInfo(){
+  try{
+    const res=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+_driveToken}});
+    if(!res.ok) return;
+    const u=await res.json();
+    _driveUserEmail=u.email||''; _driveUserName=u.name||u.email||'';
+    if(!_gasUserName) _gasUserName=_driveUserName;
+    updateSyncModal();
+  }catch{}
+}
+
+function driveSaveAndConnect(){
+  const cid=(document.getElementById('ds-cid-inp')?.value||'').trim();
+  if(cid){ DRIVE_CLIENT_ID=cid; localStorage.setItem(KDRV,cid); }
+  closeSync();
+  driveLogin();
+}
+function driveSyncNow(){ closeSync(); driveLoad(); }
+function driveDisconnect(){
+  _driveToken=null; _driveFileId=null;
+  clearInterval(_drivePollTimer); clearTimeout(_driveSaveTimer);
+  setSyncStatus('offline'); updateSyncModal();
+  toast(T('התנתקת מ-Google Drive','Disconnected from Drive'));
+  closeSync();
+}
+function copyJoinLink(){
+  if(!_driveFileId){ toast(T('יש להתחבר ל-Drive תחילה','Connect to Drive first')); return; }
+  const url=`${location.origin}${location.pathname}?fid=${_driveFileId}`;
+  navigator.clipboard.writeText(url)
+    .then(()=>toast(T('✓ לינק הצטרפות הועתק!','✓ Join link copied!')))
+    .catch(()=>prompt(T('העתק את הלינק:','Copy the link:'),url));
+}
+function saveSharedFid(){
+  const v=(document.getElementById('ds-shared-fid')?.value||'').trim();
+  _driveSharedFileId=v; localStorage.setItem(KSHARED,v);
+  const el=document.getElementById('ds-shared-status');
+  if(el){
+    if(v){el.textContent=T('✓ File ID נשמר — לחץ "התחבר ל-Drive"','✓ File ID saved — click Connect to Drive');el.style.color='var(--green)';}
+    else {el.textContent=T('הוסר','Removed');el.style.color='var(--t3)';}
+  }
+  toast(v?T('✓ File ID משותף נשמר','✓ Shared File ID saved'):T('File ID הוסר','File ID removed'));
+}
+
+function driveLogin(){
+  if(!DRIVE_CLIENT_ID){
+    const cid=prompt(T('הזן את Client ID שלך מ-Google Cloud Console:','Enter your Client ID from Google Cloud Console:'),'');
+    if(!cid) return;
+    DRIVE_CLIENT_ID=cid.trim(); localStorage.setItem(KDRV,DRIVE_CLIENT_ID);
+  }
+  try{
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:DRIVE_CLIENT_ID, scope:DRIVE_SCOPE,
+      callback:resp=>{
+        if(resp.error){setSyncStatus('err',resp.error);return;}
+        _driveToken=resp.access_token;
+        setSyncStatus('syncing');
+        fetchUserInfo();
+        driveFindOrCreate().then(()=>driveLoad()).then(()=>updateSyncModal()).catch(e=>setSyncStatus('err',e.message));
+      }
+    });
+    client.requestAccessToken();
+  }catch{setSyncStatus('err','GIS'); toast(T('⚠ טעינת Google נכשלה','⚠ Google load failed'));}
+}
+
+function driveAutoLogin(){
+  if(!DRIVE_CLIENT_ID) return;
+  try{
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:DRIVE_CLIENT_ID, scope:DRIVE_SCOPE, prompt:'none',
+      callback:resp=>{
+        if(resp.error) return;
+        _driveToken=resp.access_token;
+        fetchUserInfo();
+        driveFindOrCreate().then(()=>driveLoad()).catch(()=>{});
+      }
+    });
+    client.requestAccessToken();
+  }catch{}
+}
+
+async function driveApiFetch(url,opts={}){
+  if(!_driveToken) throw new Error('not authenticated');
+  const res=await fetch(url,{...opts,headers:{Authorization:'Bearer '+_driveToken,...(opts.headers||{})}});
+  if(res.status===401){_driveToken=null;setSyncStatus('offline');throw new Error('token expired');}
+  return res;
+}
+
+async function driveFindOrCreate(){
+  if(_driveSharedFileId){
+    _driveFileId=_driveSharedFileId;
+    const chk=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?fields=id`);
+    const d=await chk.json();
+    if(d.error) throw new Error(T('קובץ משותף לא נגיש','Shared file not accessible'));
+    return;
+  }
+  const q=encodeURIComponent(`name='${DRIVE_FILE}' and trashed=false`);
+  const res=await driveApiFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`);
+  const data=await res.json();
+  if(data.files&&data.files.length){ _driveFileId=data.files[0].id; }
+  else{
+    const payload=buildDrivePayload();
+    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
+    const cr=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      {method:'POST',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body});
+    _driveFileId=(await cr.json()).id;
   }
 }
 
@@ -1146,7 +1483,42 @@ function buildDrivePayload(){
 }
 
 function buildMultipart(meta,body){
-  return `--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${body}\r\n--${BOUNDARY}--`;
+  return`--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${body}\r\n--${BOUNDARY}--`;
+}
+
+function driveSaveDebounced(){
+  if(!_driveToken) return;
+  clearTimeout(_driveSaveTimer);
+  _driveSaveTimer=setTimeout(driveSave,1500);
+}
+
+async function driveSave(){
+  if(!_driveToken||!_driveFileId) return;
+  setSyncStatus('syncing');
+  try{
+    const payload=buildDrivePayload();
+    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
+    await driveApiFetch(`https://www.googleapis.com/upload/drive/v3/files/${_driveFileId}?uploadType=multipart`,
+      {method:'PATCH',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body});
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('err',e.message);}
+}
+
+async function driveLoad(){
+  if(!_driveToken||!_driveFileId) return;
+  setSyncStatus('syncing');
+  try{
+    const res=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?alt=media`);
+    const data=await res.json();
+    mergeFromDrive(data);
+    setSyncStatus('ok');
+    startDrivePoll();
+  }catch(e){setSyncStatus('err',e.message);}
+}
+
+function startDrivePoll(){
+  clearInterval(_drivePollTimer);
+  _drivePollTimer=setInterval(()=>{if(_driveToken&&_driveFileId)driveLoad();},DRIVE_POLL_MS);
 }
 
 function mergeReqArrays(local,remote){
@@ -1165,10 +1537,8 @@ function mergeReqArrays(local,remote){
 
 function mergeFromDrive(data){
   if(!data||typeof data!=='object') return;
-  const remoteTs=data.lastUpdated||0;
   const safe=(v,fb)=>(typeof v==='string'&&v.length>1)?v:fb;
-
-  // Merge visa_req per-record
+  const remoteTs=data.lastUpdated||0;
   let remoteReqs=[];
   try{remoteReqs=JSON.parse(safe(data.visa_req,'[]'));}catch{}
   const localReqs=ga(KV);
@@ -1176,168 +1546,19 @@ function mergeFromDrive(data){
   const mergedStr=JSON.stringify(merged);
   const prevStr=JSON.stringify(localReqs);
   localStorage.setItem(KV,mergedStr);
-
-  // visa_emp: take remote if newer
   if(remoteTs>_driveLastTs){
     _driveLastTs=remoteTs;
     if(data.visa_emp) localStorage.setItem(KEMP,safe(data.visa_emp,localStorage.getItem(KEMP)||'[]'));
   }
-
   loadSharedData();
-
-  // If local is newer → push back
   const localNewer=(mergedStr!==JSON.stringify(remoteReqs))||(remoteTs>0&&remoteTs<_driveLastTs);
-  if(localNewer) driveSave();
-
-  // Re-render if changed
+  if(localNewer){ driveSave(); return; }
   if(mergedStr!==prevStr){
     const tab=document.querySelector('.tab-panel.on')?.id?.replace('tab-','');
     if(tab==='list') renderList();
-    if(tab==='cal') renderCal();
-    if(!localNewer) toast(T('עודכן מ-Drive ✓','Updated from Drive ✓'));
+    if(tab==='cal')  renderCal();
+    toast(T('🔄 נתונים עודכנו מ-Drive','🔄 Data updated from Drive'));
   }
-}
-
-async function fetchUserInfo(){
-  try{
-    const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+_driveToken}});
-    if(!r.ok) return;
-    const u=await r.json();
-    _driveUserEmail=u.email||''; _driveUserName=u.name||'';
-  }catch{}
-}
-
-function driveSaveAndConnect(){
-  const cid=(document.getElementById('drive-cid')?.value||'').trim();
-  if(cid){localStorage.setItem(KDRV,cid);}
-  const sfid=(document.getElementById('drive-shared-fid')?.value||'').trim();
-  if(sfid){_driveSharedFileId=sfid;localStorage.setItem(KSHARED,sfid);}
-  else{_driveSharedFileId='';localStorage.removeItem(KSHARED);}
-  closeDrive();
-  driveLogin();
-}
-
-function driveLogin(){
-  const cid=localStorage.getItem(KDRV);
-  if(!cid){toast(T('נא להזין Client ID','Please enter Client ID'));openDrive();return}
-  driveSetStatus('syncing');
-  try{
-    const client=google.accounts.oauth2.initTokenClient({
-      client_id:cid,
-      scope:'https://www.googleapis.com/auth/drive',
-      callback:async(resp)=>{
-        if(resp.error){driveSetStatus('err');return}
-        _driveToken=resp.access_token;
-        await fetchUserInfo();
-        driveSetStatus('syncing');
-        await driveFindOrCreate();
-        await driveLoad();
-        driveSetStatus('ok');
-        updateDriveModal();
-        toast(T('מחובר ל-Drive ✓','Connected to Drive ✓'));
-        startDrivePoll();
-      }
-    });
-    client.requestAccessToken();
-  }catch(e){driveSetStatus('err');toast(T('שגיאה בטעינת Google','Google failed to load'));}
-}
-
-function driveAutoLogin(){
-  const cid=localStorage.getItem(KDRV);
-  if(!cid) return;
-  try{
-    const client=google.accounts.oauth2.initTokenClient({
-      client_id:cid,
-      scope:'https://www.googleapis.com/auth/drive',
-      prompt:'none',
-      callback:async(resp)=>{
-        if(resp.error) return;
-        _driveToken=resp.access_token;
-        await fetchUserInfo();
-        await driveFindOrCreate();
-        await driveLoad();
-        driveSetStatus('ok');
-        updateDriveModal();
-        startDrivePoll();
-      }
-    });
-    client.requestAccessToken();
-  }catch{}
-}
-
-function driveClear(){
-  _driveToken=null; _driveFileId=null;
-  clearInterval(_driveTimer); clearTimeout(_driveSaveTimer);
-  localStorage.removeItem(KDRV);
-  driveSetStatus('offline');
-  updateDriveModal();
-  toast(T('נותקת מ-Drive','Disconnected from Drive'));
-}
-
-async function driveApiFetch(url,opts={}){
-  if(!_driveToken) return null;
-  const r=await fetch(url,{...opts,headers:{Authorization:'Bearer '+_driveToken,...(opts.headers||{})}});
-  if(r.status===401){_driveToken=null;driveSetStatus('offline');throw new Error('token expired')}
-  if(!r.ok) throw new Error('Drive API '+r.status);
-  return r;
-}
-
-async function driveFindOrCreate(){
-  if(_driveSharedFileId){
-    _driveFileId=_driveSharedFileId;
-    const chk=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?fields=id`);
-    if(!chk) throw new Error('Shared file not accessible');
-    return;
-  }
-  const q=encodeURIComponent(`name='${DRIVE_FILE}' and trashed=false`);
-  const r=await driveApiFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`);
-  if(!r) return;
-  const data=await r.json();
-  if(data.files&&data.files.length){_driveFileId=data.files[0].id;}
-  else{
-    const payload=buildDrivePayload();
-    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
-    const cr=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{
-      method:'POST',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body
-    });
-    _driveFileId=(await cr.json()).id;
-  }
-}
-
-function driveSaveDebounced(){
-  if(!_driveToken) return;
-  clearTimeout(_driveSaveTimer);
-  _driveSaveTimer=setTimeout(driveSave,1500);
-}
-
-async function driveSave(){
-  if(!_driveToken||!_driveFileId) return;
-  driveSetStatus('syncing');
-  try{
-    const payload=buildDrivePayload();
-    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
-    await driveApiFetch(`https://www.googleapis.com/upload/drive/v3/files/${_driveFileId}?uploadType=multipart`,{
-      method:'PATCH',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body
-    });
-    driveSetStatus('ok');
-  }catch{driveSetStatus('err');}
-}
-
-async function driveLoad(){
-  if(!_driveToken||!_driveFileId) return;
-  driveSetStatus('syncing');
-  try{
-    const r=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?alt=media`);
-    if(!r) return;
-    const data=await r.json();
-    mergeFromDrive(data);
-    driveSetStatus('ok');
-  }catch{driveSetStatus('err');}
-}
-
-function startDrivePoll(){
-  clearInterval(_driveTimer);
-  _driveTimer=setInterval(async()=>{if(_driveToken&&_driveFileId)try{await driveLoad()}catch{}},DRIVE_POLL);
 }
 
 // ─── QR CODE ───
@@ -1360,15 +1581,35 @@ function copyQRUrl(){
 }
 
 // ─── INIT ───
+// קריאת ?gas= מה-URL — הצטרפות ע"י לינק
+(function(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const gasParam=params.get('gas');
+    if(gasParam&&gasParam.includes('script.google.com')){
+      GAS_URL=gasParam;
+      localStorage.setItem(KGAS,gasParam);
+      history.replaceState({},'',location.pathname+(location.hash||''));
+      toast(T('✓ הגדרות סנכרון נטענו אוטומטית','✓ Sync settings loaded automatically'));
+    }
+  }catch{}
+})();
+
 function init(){
   loadSharedData();
   applyLang();
-  driveSetStatus('offline');
-  updateDriveModal();
+  setSyncStatus('offline');
+  if(localStorage.getItem(KUSER)){
+    _gasUserName=localStorage.getItem(KUSER);
+    _driveUserName=_gasUserName;
+  }
   renderList(); renderCal();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
-  // Silent auto-login after GSI loads
-  setTimeout(driveAutoLogin, 1200);
+  if(gasEnabled()){
+    gasSync().then(()=>startGasPoll()).catch(()=>{});
+  }else{
+    setTimeout(driveAutoLogin,1200);
+  }
 }
 
 document.addEventListener('DOMContentLoaded',init);
