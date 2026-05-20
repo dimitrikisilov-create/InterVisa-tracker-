@@ -1,0 +1,18 @@
+{
+  "name": "מעקב אינטר ויזה",
+  "short_name": "אינטר ויזה",
+  "description": "מעקב חופשות אינטר ויזה לעובדים",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6fc",
+  "theme_color": "#3f4cce",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233f4cce'/><text y='.9em' font-size='80' x='10'>✈</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

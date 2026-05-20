@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>מעקב אינטר ויזה</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f4cce">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="אינטר ויזה">
+<meta name="mobile-web-app-capable" content="yes">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6fc;--bg2:#fff;--bg3:#f0f3fb;--bg4:#e6ebf8;
+  --text:#1c2040;--t2:#4a5280;--t3:#8a95ba;
+  --blue:#3f6fef;--indigo:#5b5fef;--red:#e63535;
+  --green:#18c45a;--yellow:#e8930a;--purple:#7c5ef4;--gray:#8a94b4;
+  --border:#e2e8f4;--r:12px;
+  --sh:0 1px 3px rgba(0,0,0,.05);--sh2:0 4px 16px rgba(63,111,239,.12);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:var(--bg);color:var(--text);min-height:100vh;direction:rtl}
+
+/* ─── HEADER ─── */
+.hdr{background:#3f4cce;color:#fff;padding:0 18px;display:flex;align-items:center;gap:8px;height:52px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.hdr-title{font-size:17px;font-weight:700;flex:1}
+.hdr-title span{font-size:20px;margin-left:6px}
+.hdr-btn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s;white-space:nowrap}
+.hdr-btn:hover{background:rgba(255,255,255,.25)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#64d98a;display:inline-block;flex-shrink:0}
+.sync-dot.syncing{animation:spin 1s linear infinite;background:transparent;border:2px solid #fff;border-top-color:transparent}
+.sync-dot.err{background:#ff7070}
+.sync-dot.offline{background:#f0c040}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── TABS ─── */
+.tabs{background:#fff;border-bottom:1px solid var(--border);display:flex;position:sticky;top:52px;z-index:90;box-shadow:var(--sh)}
+.tab{flex:1;padding:13px 10px;text-align:center;font-size:14px;font-weight:600;color:var(--t2);cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;user-select:none}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-panel{display:none;padding:18px 16px;max-width:780px;margin:0 auto}
+.tab-panel.on{display:block}
+
+/* ─── CARDS ─── */
+.card{background:var(--bg2);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;border-top:3px solid transparent}
+.card.blue{border-top-color:var(--blue)}.card.green{border-top-color:var(--green)}.card.yellow{border-top-color:var(--yellow)}.card.purple{border-top-color:var(--purple)}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--text)}
+
+/* ─── FORM ─── */
+.frow{margin-bottom:14px}
+label{display:block;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:5px}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--text);background:var(--bg2);transition:border-color .15s,box-shadow .15s;direction:rtl}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(63,111,239,.12)}
+.inp::placeholder{color:var(--t3)}
+textarea.inp{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ─── AUTOCOMPLETE ─── */
+.ac-wrap{position:relative}
+.ac-drop{position:absolute;top:calc(100% + 4px);right:0;left:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh2);max-height:240px;overflow-y:auto;z-index:200;display:none}
+.ac-drop.open{display:block}
+.ac-item{padding:10px 13px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--bg4);transition:background .1s}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.focus{background:var(--bg3)}
+.ac-item-num{font-weight:700;color:var(--blue);margin-left:6px}
+.ac-item-src{font-size:11px;color:var(--t3);margin-right:6px}
+.ac-empty{padding:12px 13px;color:var(--t3);font-size:14px;text-align:center}
+
+/* ─── EMP INFO ─── */
+.emp-info{background:var(--bg3);border-radius:10px;padding:12px 14px;margin-top:8px;gap:16px;display:none;grid-template-columns:1fr 1fr}
+.emp-info.show{display:grid}
+.ei-label{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:3px;letter-spacing:.5px}
+.ei-val{font-size:14px;font-weight:600;color:var(--text)}
+
+/* ─── CHIPS ─── */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.chip{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--t2);background:var(--bg2)}
+.chip.on{border-color:var(--blue);background:rgba(63,111,239,.08);color:var(--blue)}
+.chip[data-s="open"].on{border-color:var(--gray);background:rgba(138,148,180,.1);color:var(--gray)}
+.chip[data-s="manager"].on{border-color:var(--yellow);background:rgba(232,147,10,.08);color:var(--yellow)}
+.chip[data-s="authorities"].on{border-color:var(--blue);background:rgba(63,111,239,.08);color:var(--blue)}
+.chip[data-s="approved"].on{border-color:var(--green);background:rgba(24,196,90,.08);color:var(--green)}
+.chip[data-s="abroad"].on{border-color:var(--purple);background:rgba(124,94,244,.08);color:var(--purple)}
+
+/* ─── BUTTONS ─── */
+.btn{border:none;border-radius:10px;padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{opacity:.9}
+.btn-ghost{background:var(--bg3);color:var(--t2)}.btn-ghost:hover{background:var(--bg4)}
+.btn-sm{padding:6px 14px;font-size:13px;border-radius:8px}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+
+/* ─── STATUS BADGE ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge-open{background:#f0f1f8;color:#4a5280}
+.badge-manager{background:#fff3e0;color:#b96b00}
+.badge-authorities{background:#e8eeff;color:#2752c7}
+.badge-approved{background:#e3f9ed;color:#0f8a40}
+.badge-abroad{background:#f0eeff;color:#5b3dc7}
+
+/* ─── LIST ─── */
+.fbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.fc{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--t2);background:var(--bg2);transition:all .15s}
+.fc.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.req-card{background:var(--bg2);border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:8px;border-right:4px solid var(--border)}
+.req-card[data-s="open"]{border-right-color:var(--gray)}
+.req-card[data-s="manager"]{border-right-color:var(--yellow)}
+.req-card[data-s="authorities"]{border-right-color:var(--blue)}
+.req-card[data-s="approved"]{border-right-color:var(--green)}
+.req-card[data-s="abroad"]{border-right-color:var(--purple)}
+.req-name{font-size:15px;font-weight:700;color:var(--text)}
+.req-meta{font-size:13px;color:var(--t2);margin-top:3px}
+.req-meta span{margin-left:12px}
+.req-meta span::before{content:'•';margin-left:12px;color:var(--t3)}
+.req-meta span:first-child::before{display:none}
+.req-dates{font-size:13px;color:var(--t3);margin-top:4px}
+.req-actions{display:flex;gap:6px;align-items:flex-start}
+.icon-btn{background:var(--bg3);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s}
+.icon-btn:hover{background:var(--bg4)}
+.empty-state{text-align:center;padding:50px 20px;color:var(--t3)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+
+/* ─── CALENDAR ─── */
+.cal-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.cal-nav{display:flex;align-items:center;gap:6px}
+.cal-nav-btn{background:var(--bg3);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.cal-nav-btn:hover{background:var(--bg4)}
+.cal-title{font-size:16px;font-weight:700;min-width:140px;text-align:center}
+.cal-views{display:flex;gap:4px;margin-right:auto}
+.cv{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s}
+.cv.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cal-body{background:var(--bg2);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+/* Month grid */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-dh{background:var(--bg3);padding:8px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--t3)}
+.cal-cell{background:#fff;min-height:80px;padding:4px 3px;position:relative}
+.cal-cell.other{background:#fafbfe}
+.cal-day-num{font-size:12px;font-weight:600;color:var(--t2);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:2px}
+.cal-cell.today .cal-day-num{background:var(--blue);color:#fff}
+.cpill{font-size:10px;font-weight:600;border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:filter .1s}
+.cpill:hover{filter:brightness(.92)}
+.cpill-open{background:#f0f1f8;color:#4a5280}
+.cpill-manager{background:#fff3e0;color:#b96b00}
+.cpill-authorities{background:#e8eeff;color:#2752c7}
+.cpill-approved{background:#e3f9ed;color:#0f8a40}
+.cpill-abroad{background:#f0eeff;color:#5b3dc7}
+/* Week grid */
+.week-grid{display:grid;gap:1px;background:var(--border)}
+.week-dh{background:var(--bg3);padding:8px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--t3)}
+.week-cell{background:#fff;min-height:90px;padding:4px;position:relative}
+.week-cell.today-col{background:#f5f8ff}
+/* Quarter */
+.quarter-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px}
+.mini-cal{}
+.mini-title{font-size:13px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--t2)}
+.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-dh{font-size:9px;font-weight:700;color:var(--t3);text-align:center;padding:2px}
+.mini-day{font-size:9px;text-align:center;padding:3px 2px;border-radius:4px;cursor:default;position:relative}
+.mini-day.has-req{cursor:pointer}
+.mini-day.has-req::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--blue)}
+.mini-day.today-m{background:var(--blue);color:#fff;border-radius:50%}
+.mini-day.other-m{color:var(--t3)}
+
+/* ─── IMPORT MODAL ─── */
+.imp-sec{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.imp-sec:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.imp-ttl{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.imp-sub{font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.5}
+.imp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.imp-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:var(--blue);color:#fff;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s}
+.imp-btn:hover{opacity:.9}
+.imp-st{font-size:13px;font-weight:600;color:var(--t3)}
+.imp-st.ok{color:var(--green)}
+.imp-st.err{color:var(--red)}
+.emp-list-preview{margin-top:10px;max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.emp-list-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;font-size:13px;border-bottom:1px solid var(--bg4)}
+.emp-list-row:last-child{border-bottom:none}
+.emp-list-row .del-emp{background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0 4px}
+.emp-list-row .del-emp:hover{color:var(--red)}
+.add-emp-form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.add-emp-form .inp{flex:1;min-width:100px}
+
+/* ─── OVERLAY ─── */
+.ovr{display:none;position:fixed;inset:0;background:rgba(28,32,64,.45);z-index:300;align-items:center;justify-content:center;padding:16px}
+.ovr.open{display:flex}
+.ovr-box{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.ovr-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.ovr-hdr h3{font-size:16px;font-weight:700}
+.ovr-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--t3);line-height:1;padding:2px 6px}
+.ovr-close:hover{color:var(--red)}
+.ovr-body{padding:20px}
+
+/* ─── SNACK ─── */
+.snack{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2040;color:#fff;border-radius:12px;padding:11px 20px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.snack.show{opacity:1}
+
+/* ─── DRIVE MODAL ─── */
+.drive-status{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg3);border-radius:10px;margin-bottom:14px}
+.sync-dot.ok{background:#64d98a}
+.setup-guide{margin-top:10px}
+.setup-guide summary{cursor:pointer;font-size:13px;color:var(--blue);font-weight:600;padding:4px 0}
+.setup-guide ol{margin-top:8px;padding-right:18px;font-size:13px;color:var(--t2);line-height:1.7}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:600px){
+  .row2{grid-template-columns:1fr}
+  .quarter-wrap{grid-template-columns:1fr}
+  .hdr-title{font-size:14px}
+  .req-card{grid-template-columns:1fr}
+  .add-emp-form{flex-direction:column}
+}
+/* ─── MOBILE ─── */
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.ovr-box,.ac-drop,.emp-list-preview{-webkit-overflow-scrolling:touch}
+.cal-body{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.week-grid{min-width:520px}
+@media(max-width:480px){
+  .tab{font-size:12px;padding:11px 4px}
+  .chip{padding:6px 10px;font-size:12px}
+  .hdr-title{font-size:13px}
+  .hdr-btn{padding:5px 9px;font-size:12px}
+  .cal-title{font-size:14px;min-width:110px}
+  .cal-top{gap:5px}
+  .cv{padding:5px 9px;font-size:12px}
+  .cal-nav-btn{width:30px;height:30px;font-size:14px}
+  .ovr-box{border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;max-height:85vh;margin:0}
+  .ovr{align-items:flex-end;padding:0}
+}
+/* QR Modal */
+.qr-wrap{text-align:center;padding:10px 0}
+.qr-wrap canvas{border-radius:12px;box-shadow:var(--sh2)}
+.qr-url{font-size:12px;color:var(--t2);word-break:break-all;margin-top:12px;background:var(--bg3);padding:8px 12px;border-radius:8px;direction:ltr;text-align:center}
+.qr-hint{font-size:13px;color:var(--t3);margin-top:10px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title"><span>✈️</span>מעקב אינטר ויזה</div>
+  <button class="hdr-btn" onclick="openImp()" data-he="⬆ טעינת עובדים" data-en="⬆ Import">⬆ טעינת עובדים</button>
+  <button class="hdr-btn" onclick="openQR()" title="פתח בטלפון">📱</button>
+  <button class="hdr-btn" id="lang-btn" onclick="toggleLang()">EN</button>
+  <button class="hdr-btn" onclick="openDrive()">
+    <span class="sync-dot" id="sync-dot"></span> Drive
+  </button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="showTab('add')" data-he="📝 הזנת בקשה" data-en="📝 New Request">📝 הזנת בקשה</div>
+  <div class="tab" onclick="showTab('list')" data-he="📋 ריכוז" data-en="📋 Summary">📋 ריכוז</div>
+  <div class="tab" onclick="showTab('cal')" data-he="📅 לוח שנה" data-en="📅 Calendar">📅 לוח שנה</div>
+</div>
+
+<!-- ══════════ TAB: ADD ══════════ -->
+<div class="tab-panel on" id="tab-add">
+  <div class="card blue">
+    <div class="card-title" data-he="הזנת בקשת ויזה" data-en="New Visa Request">הזנת בקשת ויזה</div>
+
+    <div class="frow">
+      <label data-he="שם עובד / מספר עובד" data-en="Employee Name / Number">שם עובד / מספר עובד</label>
+      <div class="ac-wrap">
+        <input class="inp" id="f-emp-inp" placeholder="הקלד שם או מספר עובד..." autocomplete="off"
+          data-phe="הקלד שם או מספר עובד..." data-pen="Type name or employee number..."
+          oninput="acType()" onfocus="acOpen()" onblur="acHide()" onkeydown="acKey(event)">
+        <input type="hidden" id="f-emp-id">
+        <div class="ac-drop" id="ac-drop"></div>
+      </div>
+    </div>
+
+    <div class="emp-info" id="emp-info">
+      <div>
+        <div class="ei-label" data-he="מקום מוגרים" data-en="Housing">מקום מוגרים</div>
+        <div class="ei-val" id="ei-housing">—</div>
+      </div>
+      <div>
+        <div class="ei-label" data-he="פרויקט" data-en="Project">פרויקט</div>
+        <div class="ei-val" id="ei-project">—</div>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-top:14px">
+      <div class="frow" style="margin-bottom:0">
+        <label data-he="תאריך יציאה" data-en="Departure Date">תאריך יציאה</label>
+        <input type="date" class="inp" id="f-depart">
+      </div>
+      <div class="frow" style="margin-bottom:0">
+        <label data-he="תאריך חזרה" data-en="Return Date">תאריך חזרה</label>
+        <input type="date" class="inp" id="f-return">
+      </div>
+    </div>
+
+    <div class="frow" style="margin-top:14px">
+      <label data-he="מצב בקשה" data-en="Request Status">מצב בקשה</label>
+      <div class="chips" id="add-chips">
+        <div class="chip on" data-s="open" onclick="pickChip(this)" data-he="⚪ פתוחה" data-en="⚪ Open">⚪ פתוחה</div>
+        <div class="chip" data-s="manager" onclick="pickChip(this)" data-he="🟡 אושר מול מנהל עבודה" data-en="🟡 Approved by Manager">🟡 אושר מול מנהל עבודה</div>
+        <div class="chip" data-s="authorities" onclick="pickChip(this)" data-he="🔵 נשלח לרשויות" data-en="🔵 Sent to Authorities">🔵 נשלח לרשויות</div>
+        <div class="chip" data-s="approved" onclick="pickChip(this)" data-he="🟢 אושר" data-en="🟢 Approved">🟢 אושר</div>
+        <div class="chip" data-s="abroad" onclick="pickChip(this)" data-he="🟣 נמצא בהודו" data-en="🟣 In India">🟣 נמצא בהודו</div>
+      </div>
+    </div>
+
+    <div class="frow">
+      <label data-he="הערות" data-en="Notes">הערות</label>
+      <textarea class="inp" id="f-notes" placeholder="הערות נוספות..."
+        data-phe="הערות נוספות..." data-pen="Additional notes..."></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="resetForm()" data-he="נקה" data-en="Clear">נקה</button>
+      <button class="btn btn-primary" onclick="saveReq()" data-he="💾 שמור בקשה" data-en="💾 Save Request">💾 שמור בקשה</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: LIST ══════════ -->
+<div class="tab-panel" id="tab-list">
+  <div class="fbar">
+    <div class="fc on" data-f="all" onclick="pickFilter(this)" data-he="הכל" data-en="All">הכל</div>
+    <div class="fc" data-f="open" onclick="pickFilter(this)" data-he="⚪ פתוחה" data-en="⚪ Open">⚪ פתוחה</div>
+    <div class="fc" data-f="manager" onclick="pickFilter(this)" data-he="🟡 מנהל עבודה" data-en="🟡 Manager">🟡 מנהל עבודה</div>
+    <div class="fc" data-f="authorities" onclick="pickFilter(this)" data-he="🔵 רשויות" data-en="🔵 Authorities">🔵 רשויות</div>
+    <div class="fc" data-f="approved" onclick="pickFilter(this)" data-he="🟢 אושר" data-en="🟢 Approved">🟢 אושר</div>
+    <div class="fc" data-f="abroad" onclick="pickFilter(this)" data-he="🟣 בהודו" data-en="🟣 India">🟣 בהודו</div>
+  </div>
+  <div id="list-body"></div>
+</div>
+
+<!-- ══════════ TAB: CALENDAR ══════════ -->
+<div class="tab-panel" id="tab-cal">
+  <div class="cal-top">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calMove(-1)">›</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav-btn" onclick="calMove(1)">‹</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="calToday()" data-he="היום" data-en="Today">היום</button>
+    <div class="cal-views">
+      <div class="cv on" data-v="month" onclick="calView(this)" data-he="חודש" data-en="Month">חודש</div>
+      <div class="cv" data-v="week" onclick="calView(this)" data-he="שבוע" data-en="Week">שבוע</div>
+      <div class="cv" data-v="quarter" onclick="calView(this)" data-he="רבעון" data-en="Quarter">רבעון</div>
+    </div>
+  </div>
+  <div class="cal-body" id="cal-body"></div>
+</div>
+
+<!-- ══════════ EDIT MODAL ══════════ -->
+<div class="ovr" id="ovr-edit">
+  <div class="ovr-box">
+    <div class="ovr-hdr">
+      <h3 data-he="עריכת בקשה" data-en="Edit Request">עריכת בקשה</h3>
+      <button class="ovr-close" onclick="closeEdit()">✕</button>
+    </div>
+    <div class="ovr-body">
+      <input type="hidden" id="e-id">
+      <div class="frow">
+        <label data-he="עובד" data-en="Employee">עובד</label>
+        <div class="inp" style="background:var(--bg3);cursor:default" id="e-emp-name"></div>
+      </div>
+      <div class="row2">
+        <div class="frow" style="margin-bottom:0">
+          <label data-he="תאריך יציאה" data-en="Departure Date">תאריך יציאה</label>
+          <input type="date" class="inp" id="e-depart">
+        </div>
+        <div class="frow" style="margin-bottom:0">
+          <label data-he="תאריך חזרה" data-en="Return Date">תאריך חזרה</label>
+          <input type="date" class="inp" id="e-return">
+        </div>
+      </div>
+      <div class="frow" style="margin-top:14px">
+        <label data-he="מצב בקשה" data-en="Request Status">מצב בקשה</label>
+        <div class="chips" id="e-chips">
+          <div class="chip" data-s="open" onclick="pickEditChip(this)" data-he="⚪ פתוחה" data-en="⚪ Open">⚪ פתוחה</div>
+          <div class="chip" data-s="manager" onclick="pickEditChip(this)" data-he="🟡 אושר מול מנהל עבודה" data-en="🟡 Approved by Manager">🟡 אושר מול מנהל עבודה</div>
+          <div class="chip" data-s="authorities" onclick="pickEditChip(this)" data-he="🔵 נשלח לרשויות" data-en="🔵 Sent to Authorities">🔵 נשלח לרשויות</div>
+          <div class="chip" data-s="approved" onclick="pickEditChip(this)" data-he="🟢 אושר" data-en="🟢 Approved">🟢 אושר</div>
+          <div class="chip" data-s="abroad" onclick="pickEditChip(this)" data-he="🟣 נמצא בהודו" data-en="🟣 In India">🟣 נמצא בהודו</div>
+        </div>
+      </div>
+      <div class="frow">
+        <label data-he="הערות" data-en="Notes">הערות</label>
+        <textarea class="inp" id="e-notes"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="closeEdit()" data-he="ביטול" data-en="Cancel">ביטול</button>
+        <button class="btn btn-primary" onclick="saveEdit()" data-he="💾 שמור שינויים" data-en="💾 Save Changes">💾 שמור שינויים</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ IMPORT MODAL ══════════ -->
+<div class="ovr" id="ovr-imp">
+  <div class="ovr-box">
+    <div class="ovr-hdr">
+      <h3>⬆ טעינת עובדים</h3>
+      <button class="ovr-close" onclick="closeImp()">✕</button>
+    </div>
+    <div class="ovr-body">
+
+      <!-- Section 1: Excel import -->
+      <div class="imp-sec">
+        <div class="imp-ttl">📊 טעינה מקובץ Excel</div>
+        <div class="imp-sub">בחר קובץ <b>.xlsx</b> — הכלי יחפש עמודות שם ומספר עובד ויוסיף אותם לרשימה.</div>
+        <div class="imp-row">
+          <label class="imp-btn">
+            📂 בחר קובץ Excel
+            <input type="file" accept=".xlsx,.xls" style="display:none" onchange="impXLSX(this)">
+          </label>
+          <span class="imp-st" id="st-xlsx"></span>
+        </div>
+        <div id="xlsx-progress" style="display:none;margin-top:7px;font-size:12px;color:var(--t3)">⏳ מעבד...</div>
+      </div>
+
+      <!-- Section 2: Manual add employee -->
+      <div class="imp-sec">
+        <div class="imp-ttl">👤 הוספת עובד ידנית</div>
+        <div class="imp-sub">הזן שם ומספר עובד להוספה לרשימת האוטוקומפליט.</div>
+        <div class="add-emp-form">
+          <input class="inp" id="new-emp-num" placeholder="מספר עובד" style="max-width:130px">
+          <input class="inp" id="new-emp-name" placeholder="שם מלא (באנגלית)" style="flex:2">
+          <input class="inp" id="new-emp-proj" placeholder="פרויקט (אופציונלי)" style="flex:2">
+          <input class="inp" id="new-emp-housing" placeholder="מגורים (אופציונלי)" style="flex:2">
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" onclick="addEmpManual()">➕ הוסף עובד</button>
+        </div>
+      </div>
+
+      <!-- Section 3: Current visa_emp list -->
+      <div class="imp-sec">
+        <div class="imp-ttl">📋 עובדים שנטענו לכלי זה</div>
+        <div id="visa-emp-list"></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="clearVisaEmps()">🗑️ נקה רשימה</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DRIVE MODAL ══════════ -->
+<div class="ovr" id="ovr-drive">
+  <div class="ovr-box">
+    <div class="ovr-hdr">
+      <h3 data-he="🔄 הגדרות סנכרון Drive" data-en="🔄 Drive Sync Settings">🔄 הגדרות סנכרון Drive</h3>
+      <button class="ovr-close" onclick="closeDrive()">✕</button>
+    </div>
+    <div class="ovr-body">
+      <!-- Status row -->
+      <div class="drive-status" id="drive-status-row">
+        <span class="sync-dot" id="drive-dot"></span>
+        <div style="flex:1">
+          <div id="ds-status-txt" style="font-weight:700;font-size:14px" data-he="לא מחובר" data-en="Not Connected">לא מחובר</div>
+          <div id="ds-status-sub" style="font-size:12px;color:var(--t3);margin-top:2px"></div>
+        </div>
+      </div>
+      <!-- User info (shown when connected) -->
+      <div id="ds-user-info" style="display:none;font-size:13px;color:var(--t2);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border-radius:8px"></div>
+      <!-- Client ID -->
+      <div class="frow">
+        <label>Google OAuth Client ID</label>
+        <input class="inp" id="drive-cid" placeholder="...apps.googleusercontent.com">
+      </div>
+      <!-- Shared File ID -->
+      <div class="frow">
+        <label data-he="Shared File ID — לסנכרון בין משתמשים (אופציונלי)" data-en="Shared File ID — for multi-user sync (optional)">Shared File ID — לסנכרון בין משתמשים (אופציונלי)</label>
+        <input class="inp" id="drive-shared-fid" placeholder="1BxiMV..." data-phe="השאר ריק לקובץ אישי" data-pen="Leave empty for personal file">
+      </div>
+      <!-- Buttons -->
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn btn-ghost" id="ds-btn-disconnect" onclick="driveClear()" style="display:none" data-he="נתק" data-en="Disconnect">נתק</button>
+        <button class="btn btn-ghost" id="ds-btn-sync" onclick="driveSave()" style="display:none" data-he="🔄 סנכרן עכשיו" data-en="🔄 Sync Now">🔄 סנכרן עכשיו</button>
+        <button class="btn btn-primary" id="ds-btn-connect" onclick="driveSaveAndConnect()" data-he="🔗 התחבר ל-Drive" data-en="🔗 Connect to Drive">🔗 התחבר ל-Drive</button>
+      </div>
+      <details class="setup-guide">
+        <summary data-he="איך מגדירים Client ID?" data-en="How to set up Client ID?">איך מגדירים Client ID?</summary>
+        <ol>
+          <li data-he='פתח <strong>console.cloud.google.com</strong>' data-en='Open <strong>console.cloud.google.com</strong>'>פתח <strong>console.cloud.google.com</strong></li>
+          <li data-he="צור פרויקט חדש" data-en="Create a new project">צור פרויקט חדש</li>
+          <li data-he='הפעל את <strong>Google Drive API</strong>' data-en='Enable <strong>Google Drive API</strong>'>הפעל את <strong>Google Drive API</strong></li>
+          <li data-he="צור Credentials → OAuth 2.0 Client ID → Web Application" data-en="Create Credentials → OAuth 2.0 Client ID → Web Application">צור Credentials → OAuth 2.0 Client ID → Web Application</li>
+          <li data-he="הוסף את כתובת הדפדפן כ-Authorized JavaScript Origin" data-en="Add your page URL as Authorized JavaScript Origin">הוסף את כתובת הדפדפן כ-Authorized JavaScript Origin</li>
+          <li data-he="העתק את Client ID לשדה למעלה" data-en="Copy Client ID to the field above">העתק את Client ID לשדה למעלה</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ QR MODAL ══════════ -->
+<div class="ovr" id="ovr-qr">
+  <div class="ovr-box">
+    <div class="ovr-hdr">
+      <h3 data-he="📱 פתיחה בטלפון" data-en="📱 Open on Phone">📱 פתיחה בטלפון</h3>
+      <button class="ovr-close" onclick="closeQR()">✕</button>
+    </div>
+    <div class="ovr-body">
+      <div class="qr-wrap">
+        <div id="qr-canvas"></div>
+        <div class="qr-url" id="qr-url"></div>
+        <div class="qr-hint" data-he="סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים דרך Google Drive." data-en="Scan the QR code with your phone, or send the link via WhatsApp.<br>Data syncs across devices via Google Drive.">סרוק את קוד ה-QR מהטלפון, או שלח את הקישור ב-WhatsApp.<br>הנתונים מסונכרנים דרך Google Drive.</div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-ghost btn-sm" onclick="copyQRUrl()" data-he="📋 העתק קישור" data-en="📋 Copy Link">📋 העתק קישור</button>
+        <button class="btn btn-primary btn-sm" onclick="openDrive();closeQR()" data-he="🔄 הגדר Drive" data-en="🔄 Setup Drive">🔄 הגדר Drive</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SNACK -->
+<div class="snack" id="snack"></div>
+
+<script>
+'use strict';
+const XLSX_CDN='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+// ─── i18n ───
+const KLANG='visa_lang';
+let LANG=localStorage.getItem(KLANG)||'he';
+function T(he,en){return LANG==='he'?he:en}
+const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const ENG_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const HEB_DAYS=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+const ENG_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=()=>LANG==='he'?HEB_MONTHS:ENG_MONTHS;
+const DAYS=()=>LANG==='he'?HEB_DAYS:ENG_DAYS;
+const STATUS_LABELS_HE={open:'פתוחה',manager:'אושר מול מנהל עבודה',authorities:'נשלח לרשויות',approved:'אושר',abroad:'נמצא בהודו'};
+const STATUS_LABELS_EN={open:'Open',manager:'Approved by Manager',authorities:'Sent to Authorities',approved:'Approved',abroad:'In India'};
+const STATUS_LABELS=()=>LANG==='he'?STATUS_LABELS_HE:STATUS_LABELS_EN;
+
+function applyLang(){
+  const root=document.documentElement;
+  root.lang=LANG; root.dir=LANG==='he'?'rtl':'ltr';
+  document.body.style.direction=LANG==='he'?'rtl':'ltr';
+  const btn=document.getElementById('lang-btn');
+  if(btn) btn.textContent=LANG==='he'?'EN':'HE';
+  document.querySelectorAll('[data-he]').forEach(el=>{
+    el.textContent=LANG==='he'?el.dataset.he:el.dataset.en;
+  });
+  document.querySelectorAll('[data-phe]').forEach(el=>{
+    el.placeholder=LANG==='he'?el.dataset.phe:el.dataset.pen;
+  });
+  const tab=document.querySelector('.tab-panel.on')?.id?.replace('tab-','');
+  if(tab==='list') renderList();
+  if(tab==='cal') renderCal();
+}
+
+function toggleLang(){
+  LANG=LANG==='he'?'en':'he';
+  localStorage.setItem(KLANG,LANG);
+  applyLang();
+}
+
+// ─── STORAGE ───
+const KV='visa_req', KDRV='visa_drive_client_id', KEMP='visa_emp', KSHARED='visa_drive_shared_fid';
+const ga=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
+const _raw=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const sa=(k,v)=>{_raw(k,v);driveSaveDebounced()};
+const uid=()=>'V-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// ─── EMPLOYEE DATA ───
+let _emps=[], _projs=[], _props=[];
+
+function loadSharedData(){
+  // adam_emp (main dashboard)
+  try{const r=localStorage.getItem('adam_emp');if(r)_emps=JSON.parse(r)}catch{_emps=[]}
+  // adam_proj
+  try{const r=localStorage.getItem('adam_proj');if(r)_projs=JSON.parse(r)}catch{_projs=[]}
+  // adam_prop
+  try{const r=localStorage.getItem('adam_prop');if(r)_props=JSON.parse(r)}catch{_props=[]}
+  // merge visa_emp (local XL / manual employees)
+  const visaEmps=ga(KEMP);
+  const existingIds=new Set(_emps.map(e=>e.id));
+  for(const e of visaEmps){
+    if(!existingIds.has(e.id)){_emps.push(e);existingIds.add(e.id)}
+  }
+}
+
+function empNum(e){
+  return (e.empNum||'') || (e.id?e.id.replace(/^E/i,''):'');
+}
+
+function findHousing(emp){
+  // XL/manual employees have _housing pre-set
+  if(emp._housing) return emp._housing;
+  if(!emp.currentApartmentId) return '';
+  for(const p of _props){
+    if(!p.apartments) continue;
+    const apt=p.apartments.find(a=>a.id===emp.currentApartmentId);
+    if(apt) return p.name||p.address||p.id;
+  }
+  return '';
+}
+
+function findProject(emp){
+  if(emp._proj) return emp._proj;
+  if(!emp.currentProjectId) return '';
+  const p=_projs.find(p=>p.id===emp.currentProjectId);
+  return p?p.name:'';
+}
+
+// ─── STATUS HELPERS ───
+function statusBadge(s){
+  return `<span class="badge badge-${s}">${STATUS_LABELS()[s]||s}</span>`;
+}
+function statusPillClass(s){return 'cpill cpill-'+s}
+
+// ─── TABS ───
+function showTab(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  ['add','list','cal'].forEach((t,i)=>{
+    if(t===id) document.querySelectorAll('.tab')[i].classList.add('on');
+  });
+  if(id==='list') renderList();
+  if(id==='cal') renderCal();
+}
+
+// ─── AUTOCOMPLETE ───
+let _acItems=[], _acIdx=-1;
+const norm=s=>(s||'').toLowerCase().trim().replace(/\s+/g,' ');
+
+function acType(){
+  const q=norm(document.getElementById('f-emp-inp').value);
+  if(!q){acClose();return}
+  const results=_emps.filter(e=>{
+    return empNum(e).toLowerCase().includes(q)||norm(e.name).includes(q);
+  }).slice(0,30);
+  renderDrop(results);
+}
+
+function renderDrop(items){
+  _acItems=items; _acIdx=-1;
+  const drop=document.getElementById('ac-drop');
+  if(!items.length){
+    drop.innerHTML=`<div class="ac-empty">${T('לא נמצאו עובדים — ניתן לטעון מ-XL או להוסיף ידנית','No employees found — import from Excel or add manually')}</div>`;
+    drop.classList.add('open'); return;
+  }
+  drop.innerHTML=items.map((e,i)=>`
+    <div class="ac-item" data-i="${i}" onmousedown="acPick(${i})">
+      <span class="ac-item-num">${empNum(e)}</span>${e.name}
+      ${e._source?`<span class="ac-item-src">(${e._source==='xl'?'XL':T('ידני','Manual')})</span>`:''}
+    </div>`).join('');
+  drop.classList.add('open');
+}
+
+function acOpen(){if(document.getElementById('f-emp-inp').value.trim())acType()}
+function acHide(){setTimeout(()=>{document.getElementById('ac-drop').classList.remove('open')},150)}
+function acClose(){document.getElementById('ac-drop').classList.remove('open')}
+
+function acKey(e){
+  const items=document.querySelectorAll('#ac-drop .ac-item');
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){e.preventDefault();_acIdx=Math.min(_acIdx+1,items.length-1);highlightAc(items)}
+  if(e.key==='ArrowUp'){e.preventDefault();_acIdx=Math.max(_acIdx-1,0);highlightAc(items)}
+  if(e.key==='Enter'&&_acIdx>=0){e.preventDefault();acPick(_acIdx)}
+}
+function highlightAc(items){
+  items.forEach((el,i)=>el.classList.toggle('focus',i===_acIdx));
+  if(_acIdx>=0)items[_acIdx].scrollIntoView({block:'nearest'});
+}
+
+function acPick(i){
+  const emp=_acItems[i]; if(!emp) return;
+  document.getElementById('f-emp-inp').value=`${empNum(emp)} — ${emp.name}`;
+  document.getElementById('f-emp-id').value=emp.id;
+  acClose();
+  const housing=findHousing(emp), proj=findProject(emp);
+  document.getElementById('ei-housing').textContent=housing||'—';
+  document.getElementById('ei-project').textContent=proj||'—';
+  document.getElementById('emp-info').classList.add('show');
+  window._selEmp={...emp,_housing:housing,_proj:proj};
+}
+
+// ─── FORM CHIPS ───
+let _selStatus='open';
+function pickChip(el){
+  document.querySelectorAll('#add-chips .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  _selStatus=el.dataset.s;
+}
+
+// ─── SAVE REQUEST ───
+function saveReq(){
+  const empId=document.getElementById('f-emp-id').value;
+  if(!empId){toast(T('נא לבחור עובד','Please select an employee'));return}
+  const depart=document.getElementById('f-depart').value;
+  const ret=document.getElementById('f-return').value;
+  if(!depart||!ret){toast(T('נא למלא תאריכי יציאה וחזרה','Please fill departure and return dates'));return}
+  if(depart>ret){toast(T('תאריך חזרה חייב להיות אחרי תאריך יציאה','Return date must be after departure'));return}
+  const emp=window._selEmp||{};
+  const req={
+    id:uid(),
+    employeeId:empId,
+    employeeName:emp.name||'',
+    employeeNum:empNum(emp),
+    projectId:emp.currentProjectId||'',
+    projectName:emp._proj||'',
+    housing:emp._housing||'',
+    departureDate:depart,
+    returnDate:ret,
+    status:_selStatus||'open',
+    notes:document.getElementById('f-notes').value.trim(),
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+  const reqs=ga(KV);
+  reqs.unshift(req);
+  sa(KV,reqs);
+  toast(T('הבקשה נשמרה בהצלחה ✓','Request saved ✓'));
+  resetForm();
+}
+
+function resetForm(){
+  document.getElementById('f-emp-inp').value='';
+  document.getElementById('f-emp-id').value='';
+  document.getElementById('f-depart').value='';
+  document.getElementById('f-return').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('emp-info').classList.remove('show');
+  // Reset chips — auto-select "פתוחה"
+  document.querySelectorAll('#add-chips .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelector('#add-chips .chip[data-s="open"]').classList.add('on');
+  _selStatus='open';
+  window._selEmp=null;
+}
+
+// ─── LIST ───
+let _filter='all';
+function pickFilter(el){
+  document.querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  _filter=el.dataset.f;
+  renderList();
+}
+
+function renderList(){
+  let reqs=ga(KV);
+  if(_filter!=='all') reqs=reqs.filter(r=>r.status===_filter);
+  const body=document.getElementById('list-body');
+  if(!reqs.length){
+    body.innerHTML=`<div class="empty-state"><div class="es-icon">✈️</div><p>${T('אין בקשות להצגה','No requests to show')}</p></div>`;
+    return;
+  }
+  body.innerHTML=reqs.map(r=>`
+    <div class="req-card" data-s="${r.status}">
+      <div>
+        <div class="req-name">${r.employeeName} <span style="color:var(--t3);font-size:13px;font-weight:400">#${r.employeeNum}</span></div>
+        <div class="req-meta">
+          ${r.projectName?`<span>📁 ${r.projectName}</span>`:''}
+          ${r.housing?`<span>🏠 ${r.housing}</span>`:''}
+        </div>
+        <div class="req-dates">✈️ ${T('יציאה','Dep')}: ${fmt(r.departureDate)} &nbsp;|&nbsp; 🛬 ${T('חזרה','Ret')}: ${fmt(r.returnDate)}</div>
+        <div style="margin-top:6px">${statusBadge(r.status)}</div>
+        ${r.notes?`<div style="font-size:13px;color:var(--t2);margin-top:5px">📝 ${r.notes}</div>`:''}
+      </div>
+      <div class="req-actions">
+        <button class="icon-btn" title="עריכה" onclick="openEdit('${r.id}')">✏️</button>
+        <button class="icon-btn" title="מחיקה" onclick="deleteReq('${r.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function fmt(d){
+  if(!d) return '—';
+  const [y,m,day]=d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function deleteReq(id){
+  if(!confirm(T('למחוק את הבקשה?','Delete this request?'))) return;
+  const reqs=ga(KV).filter(r=>r.id!==id);
+  sa(KV,reqs);
+  renderList();
+  toast(T('הבקשה נמחקה','Request deleted'));
+}
+
+// ─── EDIT MODAL ───
+let _editStatus='open';
+function openEdit(id){
+  const req=ga(KV).find(r=>r.id===id); if(!req) return;
+  document.getElementById('e-id').value=id;
+  document.getElementById('e-emp-name').textContent=`${req.employeeNum} — ${req.employeeName}`;
+  document.getElementById('e-depart').value=req.departureDate;
+  document.getElementById('e-return').value=req.returnDate;
+  document.getElementById('e-notes').value=req.notes||'';
+  _editStatus=req.status;
+  document.querySelectorAll('#e-chips .chip').forEach(c=>c.classList.toggle('on',c.dataset.s===req.status));
+  document.getElementById('ovr-edit').classList.add('open');
+}
+function closeEdit(){document.getElementById('ovr-edit').classList.remove('open')}
+
+function pickEditChip(el){
+  document.querySelectorAll('#e-chips .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  _editStatus=el.dataset.s;
+}
+
+function saveEdit(){
+  const id=document.getElementById('e-id').value;
+  const depart=document.getElementById('e-depart').value;
+  const ret=document.getElementById('e-return').value;
+  if(!depart||!ret){toast(T('נא למלא תאריכים','Please fill dates'));return}
+  if(depart>ret){toast(T('תאריך חזרה חייב להיות אחרי תאריך יציאה','Return date must be after departure'));return}
+  const reqs=ga(KV);
+  const idx=reqs.findIndex(r=>r.id===id); if(idx<0) return;
+  reqs[idx]={...reqs[idx],departureDate:depart,returnDate:ret,status:_editStatus,notes:document.getElementById('e-notes').value.trim(),updatedAt:new Date().toISOString()};
+  sa(KV,reqs);
+  closeEdit();
+  renderList();
+  renderCal();
+  toast(T('הבקשה עודכנה ✓','Request updated ✓'));
+}
+
+// ─── CALENDAR ───
+let _calDate=new Date(), _calView='month';
+
+function calView(el){
+  document.querySelectorAll('.cv').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); _calView=el.dataset.v; renderCal();
+}
+function calMove(dir){
+  if(_calView==='month') _calDate.setMonth(_calDate.getMonth()+dir);
+  else if(_calView==='week') _calDate.setDate(_calDate.getDate()+dir*7);
+  else _calDate.setMonth(_calDate.getMonth()+dir*3);
+  renderCal();
+}
+function calToday(){_calDate=new Date();renderCal()}
+
+function renderCal(){
+  const body=document.getElementById('cal-body'), title=document.getElementById('cal-title');
+  if(_calView==='month') renderCalMonth(body,title);
+  else if(_calView==='week') renderCalWeek(body,title);
+  else renderCalQuarter(body,title);
+}
+
+function reqsInRange(from,to){
+  return ga(KV).filter(r=>r.departureDate<=to&&r.returnDate>=from);
+}
+function dateStr(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function pill(r){
+  // Clicking pill opens edit modal directly
+  return `<div class="${statusPillClass(r.status)}" title="${r.employeeName} — לחץ לעריכה"
+    onclick="openEdit('${r.id}')">${r.employeeNum} ${r.employeeName.split(' ')[0]}</div>`;
+}
+
+function renderCalMonth(body,title){
+  const y=_calDate.getFullYear(), m=_calDate.getMonth();
+  title.textContent=`${MONTHS()[m]} ${y}`;
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const today=dateStr(new Date());
+  const reqs=reqsInRange(dateStr(new Date(y,m,1)),dateStr(new Date(y,m,daysInMonth)));
+
+  let html=`<div class="cal-grid">`;
+  html+=DAYS().map(d=>`<div class="cal-dh">${d}</div>`).join('');
+  for(let i=0;i<new Date(y,m,1).getDay();i++) html+=`<div class="cal-cell other"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayReqs=reqs.filter(r=>r.departureDate<=ds&&r.returnDate>=ds);
+    html+=`<div class="cal-cell${ds===today?' today':''}">
+      <div class="cal-day-num">${d}</div>
+      ${dayReqs.map(r=>pill(r)).join('')}
+    </div>`;
+  }
+  html+=`</div>`;
+  body.innerHTML=html;
+}
+
+function renderCalWeek(body,title){
+  const dow=_calDate.getDay();
+  const weekStart=new Date(_calDate); weekStart.setDate(_calDate.getDate()-dow);
+  const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+  const from=dateStr(weekStart), to=dateStr(weekEnd);
+  const reqs=reqsInRange(from,to);
+  const today=dateStr(new Date());
+  title.textContent=`${fmt(from)} – ${fmt(to)}`;
+
+  const days=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d});
+  let html=`<div class="week-grid" style="grid-template-columns:repeat(7,minmax(80px,1fr))">`;
+  html+=days.map(dd=>`<div class="week-dh${dateStr(dd)===today?' today-col':''}">${DAYS()[dd.getDay()]} ${dd.getDate()}</div>`).join('');
+  html+=days.map(dd=>{
+    const ds=dateStr(dd);
+    const dayReqs=reqs.filter(r=>r.departureDate<=ds&&r.returnDate>=ds);
+    return `<div class="week-cell${ds===today?' today-col':''}">${dayReqs.map(r=>pill(r)).join('')}</div>`;
+  }).join('');
+  html+=`</div>`;
+  body.innerHTML=html;
+}
+
+function renderCalQuarter(body,title){
+  const y=_calDate.getFullYear(), m=_calDate.getMonth();
+  const qStart=Math.floor(m/3)*3;
+  title.textContent=T(`רבעון ${Math.floor(qStart/3)+1} – ${y}`,`Q${Math.floor(qStart/3)+1} – ${y}`);
+  const today=dateStr(new Date());
+  const from=`${y}-${String(qStart+1).padStart(2,'0')}-01`;
+  const lastDay=new Date(y,qStart+3,0);
+  const reqs=reqsInRange(from,dateStr(lastDay));
+
+  let html=`<div class="quarter-wrap">`;
+  for(const mi of [qStart,qStart+1,qStart+2]){
+    const daysInM=new Date(y,mi+1,0).getDate();
+    html+=`<div class="mini-cal"><div class="mini-title">${MONTHS()[mi]}</div>
+      <div class="mini-grid">
+        ${DAYS().map(d=>`<div class="mini-dh">${d}</div>`).join('')}
+        ${Array(new Date(y,mi,1).getDay()).fill('<div class="mini-day other-m"></div>').join('')}
+        ${Array.from({length:daysInM},(_,i)=>{
+          const d=i+1;
+          const ds=`${y}-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const dayReqs=reqs.filter(r=>r.departureDate<=ds&&r.returnDate>=ds);
+          const isToday=ds===today;
+          const clickable=dayReqs.length>0&&!isToday;
+          const onclick=dayReqs.length===1?`onclick="openEdit('${dayReqs[0].id}')"`:
+            dayReqs.length>1?`onclick="calQuarterMulti(${JSON.stringify(dayReqs.map(r=>r.id))})"`:'';
+          return `<div class="mini-day${isToday?' today-m':''}${dayReqs.length&&!isToday?' has-req':''}" ${onclick}>${d}</div>`;
+        }).join('')}
+      </div></div>`;
+  }
+  html+=`</div>`;
+  body.innerHTML=html;
+}
+
+function calQuarterMulti(ids){
+  // Multiple requests on that day: open first
+  if(ids&&ids.length) openEdit(ids[0]);
+}
+
+// ─── XLSX IMPORT ───
+function loadSJS(cb){
+  if(window.XLSX){cb();return}
+  const s=document.createElement('script');
+  s.src=XLSX_CDN;
+  s.onload=cb;
+  s.onerror=()=>alert('שגיאה בטעינת ספריית Excel. בדוק חיבור אינטרנט.');
+  document.head.appendChild(s);
+}
+
+function impXLSX(input){
+  const file=input.files[0]; if(!file) return;
+  const prog=document.getElementById('xlsx-progress');
+  const stEl=document.getElementById('st-xlsx');
+  prog.style.display='block'; stEl.textContent=''; stEl.className='imp-st';
+
+  loadSJS(()=>{
+    const rd=new FileReader();
+    rd.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+        // Detect header row by finding a row with name/number column
+        let numCol=-1, nameCol=-1, projCol=-1, housingCol=-1, hdrRow=0;
+        for(let r=0;r<Math.min(8,rows.length);r++){
+          const row=rows[r].map(c=>String(c).trim().toLowerCase());
+          const nmi=row.findIndex(c=>c.includes('שם')||c.includes('name')||c.includes('employee'));
+          if(nmi>=0){
+            hdrRow=r; nameCol=nmi;
+            numCol=row.findIndex(c=>c.includes('מספר')||c.includes('number')||c.includes('id')||c.includes('emp'));
+            projCol=row.findIndex(c=>c.includes('פרויקט')||c.includes('project'));
+            housingCol=row.findIndex(c=>c.includes('כתובת')||c.includes('נכס')||c.includes('מגורים')||c.includes('address'));
+            break;
+          }
+        }
+        if(nameCol<0){prog.style.display='none';stEl.textContent=T('לא נמצאה עמודת שם','Name column not found');stEl.className='imp-st err';input.value='';return}
+
+        const existing=ga(KEMP);
+        const existingNums=new Set(existing.map(e=>e.empNum));
+        let added=0;
+
+        for(let r=hdrRow+1;r<rows.length;r++){
+          const name=String(rows[r][nameCol]||'').trim();
+          if(!name) continue;
+          const num=numCol>=0?String(rows[r][numCol]||'').trim():'';
+          const proj=projCol>=0?String(rows[r][projCol]||'').trim():'';
+          const housing=housingCol>=0?String(rows[r][housingCol]||'').trim():'';
+          const eid='EX'+(num||name.replace(/\s+/g,'').slice(0,6)+r);
+          if(existingNums.has(num)&&num) continue; // skip duplicates
+          existing.push({id:eid,name,empNum:num,currentProjectId:'',currentApartmentId:'',_proj:proj,_housing:housing,_source:'xl'});
+          if(num) existingNums.add(num);
+          added++;
+        }
+
+        _raw(KEMP,existing);
+        loadSharedData();
+        prog.style.display='none';
+        stEl.textContent=T(`✓ נוספו ${added} עובדים`,`✓ Added ${added} employees`);
+        stEl.className='imp-st ok';
+        renderVisaEmpList();
+        toast(T(`נטענו ${added} עובדים מהקובץ`,`Loaded ${added} employees from file`));
+      }catch(err){
+        prog.style.display='none';
+        stEl.textContent='שגיאה: '+err.message;
+        stEl.className='imp-st err';
+      }
+      input.value='';
+    };
+    rd.readAsArrayBuffer(file);
+  });
+}
+
+// ─── MANUAL ADD EMPLOYEE ───
+function addEmpManual(){
+  const num=(document.getElementById('new-emp-num').value||'').trim();
+  const name=(document.getElementById('new-emp-name').value||'').trim();
+  const proj=(document.getElementById('new-emp-proj').value||'').trim();
+  const housing=(document.getElementById('new-emp-housing').value||'').trim();
+  if(!name){toast(T('נא להזין שם עובד','Please enter employee name'));return}
+  const existing=ga(KEMP);
+  if(num&&existing.some(e=>e.empNum===num)){toast(T('עובד עם מספר זה כבר קיים','Employee with this number already exists'));return}
+  const eid='EM'+(num||Date.now().toString(36));
+  existing.push({id:eid,name,empNum:num,currentProjectId:'',currentApartmentId:'',_proj:proj,_housing:housing,_source:'manual'});
+  _raw(KEMP,existing);
+  loadSharedData();
+  document.getElementById('new-emp-num').value='';
+  document.getElementById('new-emp-name').value='';
+  document.getElementById('new-emp-proj').value='';
+  document.getElementById('new-emp-housing').value='';
+  renderVisaEmpList();
+  toast(`${name} ${T('נוסף לרשימה ✓','added ✓')}`);
+}
+
+function deleteVisaEmp(id){
+  const emps=ga(KEMP).filter(e=>e.id!==id);
+  _raw(KEMP,emps);
+  loadSharedData();
+  renderVisaEmpList();
+  toast(T('העובד הוסר','Employee removed'));
+}
+
+function clearVisaEmps(){
+  if(!confirm(T('למחוק את כל עובדי הכלי (מ-XL ויד)?','Delete all tool employees (XL & manual)?'))) return;
+  _raw(KEMP,[]);
+  loadSharedData();
+  renderVisaEmpList();
+  toast(T('הרשימה נוקתה','List cleared'));
+}
+
+function renderVisaEmpList(){
+  const emps=ga(KEMP);
+  const el=document.getElementById('visa-emp-list');
+  if(!emps.length){el.innerHTML=`<div style="font-size:13px;color:var(--t3);padding:8px 0">${T('אין עובדים שנטענו עדיין','No employees loaded yet')}</div>`;return}
+  el.innerHTML=`<div class="emp-list-preview">${emps.map(e=>`
+    <div class="emp-list-row">
+      <span><b>${e.empNum||'—'}</b> ${e.name} <span style="font-size:11px;color:var(--t3)">(${e._source==='xl'?'XL':T('ידני','Manual')})</span></span>
+      <button class="del-emp" onclick="deleteVisaEmp('${e.id}')">✕</button>
+    </div>`).join('')}</div>`;
+}
+
+// ─── IMPORT MODAL ───
+function openImp(){
+  renderVisaEmpList();
+  document.getElementById('st-xlsx').textContent='';
+  document.getElementById('st-xlsx').className='imp-st';
+  document.getElementById('ovr-imp').classList.add('open');
+}
+function closeImp(){document.getElementById('ovr-imp').classList.remove('open')}
+
+// ─── TOAST ───
+let _snackT;
+function toast(msg){
+  const s=document.getElementById('snack');
+  s.textContent=msg; s.classList.add('show');
+  clearTimeout(_snackT);
+  _snackT=setTimeout(()=>s.classList.remove('show'),2800);
+}
+
+// ─── DRIVE SYNC ───
+const DRIVE_FILE='visa_data.json', DRIVE_POLL=30000;
+const BOUNDARY='visa_boundary';
+let _driveToken=null, _driveFileId=null, _driveTimer=null, _driveSaveTimer=null;
+let _driveLastTs=0, _driveUserEmail='', _driveUserName='';
+let _driveSharedFileId=localStorage.getItem(KSHARED)||'';
+
+function openDrive(){
+  // Populate inputs before opening
+  const cidInp=document.getElementById('drive-cid');
+  if(cidInp) cidInp.value=localStorage.getItem(KDRV)||'';
+  const sfInp=document.getElementById('drive-shared-fid');
+  if(sfInp) sfInp.value=_driveSharedFileId;
+  updateDriveModal();
+  document.getElementById('ovr-drive').classList.add('open');
+}
+function closeDrive(){document.getElementById('ovr-drive').classList.remove('open')}
+
+function driveSetStatus(state,txt){
+  const dot=document.getElementById('sync-dot');
+  const ddot=document.getElementById('drive-dot');
+  [dot,ddot].forEach(d=>{
+    if(!d) return;
+    d.className='sync-dot';
+    if(state==='ok') d.classList.add('ok');
+    else if(state==='syncing') d.classList.add('syncing');
+    else if(state==='err') d.style.background='#ff7070';
+    else d.style.background='#f0c040';
+  });
+}
+
+function updateDriveModal(){
+  const dot=document.getElementById('drive-dot');
+  const stxt=document.getElementById('ds-status-txt');
+  const ssub=document.getElementById('ds-status-sub');
+  const uinfo=document.getElementById('ds-user-info');
+  const btnConn=document.getElementById('ds-btn-connect');
+  const btnSync=document.getElementById('ds-btn-sync');
+  const btnDisc=document.getElementById('ds-btn-disconnect');
+  if(!dot) return;
+  const connected=!!(_driveToken&&_driveFileId);
+  if(connected){
+    dot.className='sync-dot ok';
+    stxt.textContent=T('מחובר ✓','Connected ✓');
+    ssub.textContent=_driveSharedFileId
+      ? T('קובץ משותף — מסונכרן עם כל המשתמשים','Shared file — synced with all users')
+      : T('קובץ אישי — מסונכרן עם כל המכשירים שלך','Personal file — synced across your devices');
+    if(uinfo&&_driveUserName){uinfo.style.display='block';uinfo.textContent=`${_driveUserName} (${_driveUserEmail})`;}
+    if(btnConn) btnConn.style.display='none';
+    if(btnSync) btnSync.style.display='';
+    if(btnDisc) btnDisc.style.display='';
+  }else{
+    dot.className='sync-dot';dot.style.background='#f0c040';
+    stxt.textContent=T('לא מחובר','Not Connected');
+    ssub.textContent=T('לחץ "התחבר" לסנכרון בין מכשירים','Click "Connect" to sync across devices');
+    if(uinfo) uinfo.style.display='none';
+    if(btnConn) btnConn.style.display='';
+    if(btnSync) btnSync.style.display='none';
+    if(btnDisc) btnDisc.style.display='none';
+  }
+}
+
+function buildDrivePayload(){
+  const now=Date.now();
+  _driveLastTs=Math.max(_driveLastTs,now);
+  return JSON.stringify({lastUpdated:_driveLastTs,visa_req:localStorage.getItem(KV)||'[]',visa_emp:localStorage.getItem(KEMP)||'[]'});
+}
+
+function buildMultipart(meta,body){
+  return `--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${BOUNDARY}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${body}\r\n--${BOUNDARY}--`;
+}
+
+function mergeReqArrays(local,remote){
+  const map=new Map(local.map(l=>[l.id,l]));
+  remote.forEach(r=>{
+    const loc=map.get(r.id);
+    if(!loc){map.set(r.id,r);}
+    else{
+      const lTs=loc.updatedAt||loc.createdAt||'';
+      const rTs=r.updatedAt||r.createdAt||'';
+      if(rTs>lTs) map.set(r.id,r);
+    }
+  });
+  return [...map.values()].sort((a,b)=>((b.createdAt||'')>(a.createdAt||''))?1:-1);
+}
+
+function mergeFromDrive(data){
+  if(!data||typeof data!=='object') return;
+  const remoteTs=data.lastUpdated||0;
+  const safe=(v,fb)=>(typeof v==='string'&&v.length>1)?v:fb;
+
+  // Merge visa_req per-record
+  let remoteReqs=[];
+  try{remoteReqs=JSON.parse(safe(data.visa_req,'[]'));}catch{}
+  const localReqs=ga(KV);
+  const merged=mergeReqArrays(localReqs,remoteReqs);
+  const mergedStr=JSON.stringify(merged);
+  const prevStr=JSON.stringify(localReqs);
+  localStorage.setItem(KV,mergedStr);
+
+  // visa_emp: take remote if newer
+  if(remoteTs>_driveLastTs){
+    _driveLastTs=remoteTs;
+    if(data.visa_emp) localStorage.setItem(KEMP,safe(data.visa_emp,localStorage.getItem(KEMP)||'[]'));
+  }
+
+  loadSharedData();
+
+  // If local is newer → push back
+  const localNewer=(mergedStr!==JSON.stringify(remoteReqs))||(remoteTs>0&&remoteTs<_driveLastTs);
+  if(localNewer) driveSave();
+
+  // Re-render if changed
+  if(mergedStr!==prevStr){
+    const tab=document.querySelector('.tab-panel.on')?.id?.replace('tab-','');
+    if(tab==='list') renderList();
+    if(tab==='cal') renderCal();
+    if(!localNewer) toast(T('עודכן מ-Drive ✓','Updated from Drive ✓'));
+  }
+}
+
+async function fetchUserInfo(){
+  try{
+    const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+_driveToken}});
+    if(!r.ok) return;
+    const u=await r.json();
+    _driveUserEmail=u.email||''; _driveUserName=u.name||'';
+  }catch{}
+}
+
+function driveSaveAndConnect(){
+  const cid=(document.getElementById('drive-cid')?.value||'').trim();
+  if(cid){localStorage.setItem(KDRV,cid);}
+  const sfid=(document.getElementById('drive-shared-fid')?.value||'').trim();
+  if(sfid){_driveSharedFileId=sfid;localStorage.setItem(KSHARED,sfid);}
+  else{_driveSharedFileId='';localStorage.removeItem(KSHARED);}
+  closeDrive();
+  driveLogin();
+}
+
+function driveLogin(){
+  const cid=localStorage.getItem(KDRV);
+  if(!cid){toast(T('נא להזין Client ID','Please enter Client ID'));openDrive();return}
+  driveSetStatus('syncing');
+  try{
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:cid,
+      scope:'https://www.googleapis.com/auth/drive',
+      callback:async(resp)=>{
+        if(resp.error){driveSetStatus('err');return}
+        _driveToken=resp.access_token;
+        await fetchUserInfo();
+        driveSetStatus('syncing');
+        await driveFindOrCreate();
+        await driveLoad();
+        driveSetStatus('ok');
+        updateDriveModal();
+        toast(T('מחובר ל-Drive ✓','Connected to Drive ✓'));
+        startDrivePoll();
+      }
+    });
+    client.requestAccessToken();
+  }catch(e){driveSetStatus('err');toast(T('שגיאה בטעינת Google','Google failed to load'));}
+}
+
+function driveAutoLogin(){
+  const cid=localStorage.getItem(KDRV);
+  if(!cid) return;
+  try{
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:cid,
+      scope:'https://www.googleapis.com/auth/drive',
+      prompt:'none',
+      callback:async(resp)=>{
+        if(resp.error) return;
+        _driveToken=resp.access_token;
+        await fetchUserInfo();
+        await driveFindOrCreate();
+        await driveLoad();
+        driveSetStatus('ok');
+        updateDriveModal();
+        startDrivePoll();
+      }
+    });
+    client.requestAccessToken();
+  }catch{}
+}
+
+function driveClear(){
+  _driveToken=null; _driveFileId=null;
+  clearInterval(_driveTimer); clearTimeout(_driveSaveTimer);
+  localStorage.removeItem(KDRV);
+  driveSetStatus('offline');
+  updateDriveModal();
+  toast(T('נותקת מ-Drive','Disconnected from Drive'));
+}
+
+async function driveApiFetch(url,opts={}){
+  if(!_driveToken) return null;
+  const r=await fetch(url,{...opts,headers:{Authorization:'Bearer '+_driveToken,...(opts.headers||{})}});
+  if(r.status===401){_driveToken=null;driveSetStatus('offline');throw new Error('token expired')}
+  if(!r.ok) throw new Error('Drive API '+r.status);
+  return r;
+}
+
+async function driveFindOrCreate(){
+  if(_driveSharedFileId){
+    _driveFileId=_driveSharedFileId;
+    const chk=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?fields=id`);
+    if(!chk) throw new Error('Shared file not accessible');
+    return;
+  }
+  const q=encodeURIComponent(`name='${DRIVE_FILE}' and trashed=false`);
+  const r=await driveApiFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`);
+  if(!r) return;
+  const data=await r.json();
+  if(data.files&&data.files.length){_driveFileId=data.files[0].id;}
+  else{
+    const payload=buildDrivePayload();
+    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
+    const cr=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{
+      method:'POST',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body
+    });
+    _driveFileId=(await cr.json()).id;
+  }
+}
+
+function driveSaveDebounced(){
+  if(!_driveToken) return;
+  clearTimeout(_driveSaveTimer);
+  _driveSaveTimer=setTimeout(driveSave,1500);
+}
+
+async function driveSave(){
+  if(!_driveToken||!_driveFileId) return;
+  driveSetStatus('syncing');
+  try{
+    const payload=buildDrivePayload();
+    const body=buildMultipart({name:DRIVE_FILE,mimeType:'application/json'},payload);
+    await driveApiFetch(`https://www.googleapis.com/upload/drive/v3/files/${_driveFileId}?uploadType=multipart`,{
+      method:'PATCH',headers:{'Content-Type':`multipart/related; boundary=${BOUNDARY}`},body
+    });
+    driveSetStatus('ok');
+  }catch{driveSetStatus('err');}
+}
+
+async function driveLoad(){
+  if(!_driveToken||!_driveFileId) return;
+  driveSetStatus('syncing');
+  try{
+    const r=await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${_driveFileId}?alt=media`);
+    if(!r) return;
+    const data=await r.json();
+    mergeFromDrive(data);
+    driveSetStatus('ok');
+  }catch{driveSetStatus('err');}
+}
+
+function startDrivePoll(){
+  clearInterval(_driveTimer);
+  _driveTimer=setInterval(async()=>{if(_driveToken&&_driveFileId)try{await driveLoad()}catch{}},DRIVE_POLL);
+}
+
+// ─── QR CODE ───
+function openQR(){
+  const url=location.href.split('?')[0];
+  document.getElementById('qr-url').textContent=url;
+  document.getElementById('ovr-qr').classList.add('open');
+  const wrap=document.getElementById('qr-canvas');
+  wrap.innerHTML='';
+  const img=document.createElement('img');
+  img.style.cssText='width:220px;height:220px;border-radius:8px';
+  img.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=1c2040&bgcolor=ffffff&data='+encodeURIComponent(url);
+  img.alt='QR Code';
+  wrap.appendChild(img);
+}
+function closeQR(){document.getElementById('ovr-qr').classList.remove('open')}
+function copyQRUrl(){
+  const url=location.href.split('?')[0];
+  navigator.clipboard?.writeText(url).then(()=>toast(T('קישור הועתק ✓','Link copied ✓'))).catch(()=>toast(url));
+}
+
+// ─── INIT ───
+function init(){
+  loadSharedData();
+  applyLang();
+  driveSetStatus('offline');
+  updateDriveModal();
+  renderList(); renderCal();
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+  // Silent auto-login after GSI loads
+  setTimeout(driveAutoLogin, 1200);
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
